@@ -32,6 +32,8 @@ Append-only log of decisions, confirmed facts and what was done per step. Newest
 | D25 | Commits made on explicit request after showing the list; first batch = 3 commits (0d276a0, 599b31d, 94a046e) | D20/D17 |
 | D26 | `scripts/chat.py` default model = `gemini-3.5-flash` (follows the `Article URL:` instruction, lite does not); document layout unchanged | measured 4/4 vs 0/4 |
 | D27 | One folder `articles/` (committed job output) replaces `data/` + `samples/`; no "all articles" mode | User instruction: only the 40 articles matter |
+| D28 | No answer guardrails (eval script / retry / topic gate): the task only needs the sample question answered with cited URLs; keep the assistant = verbatim prompt + File Search | User instruction: avoid workaround-style additions |
+| D29 | User-facing scripts: sync_docs, check_store, chat; README is a 5-minute user guide | User instruction |
 | D17 | Commits need an explicit request AND a second confirmation after I show files + messages | User instruction (2026-10-31) |
 | D13 | Plan each step before doing it; settle open items from the previous step first | User instruction |
 
@@ -147,3 +149,14 @@ Append-only log of decisions, confirmed facts and what was done per step. Newest
 - `data/` and `samples/` merged into one committed folder `articles/` (job output; git sees 40 renames at 100% similarity, so the job rewrites identical bytes). `scripts/make_samples.py` removed (the id list is the source), `verify_samples.py` -> `verify_articles.py`, test file renamed. Default `ARTICLES_DIR=articles`.
 - The "all articles" mode is removed: `main.py` always reads the id list (exit 2 if the file is missing/invalid). Tests build an id list from the articles they provide. All mentions of the larger corpus removed from code, tests, README, docs (this log keeps its history).
 - Decision D27: scope is exactly the 40 listed articles; to change it edit `config/article_ids.txt`.
+
+### Step 6 - commit and off-topic probe (2026-10-31)
+- Commit `c8eb571 refactor: sync listed articles from articles` (message chosen by the user). `git push` failed from the tool environment (no GitHub credentials: "could not read Username"), so origin is still at `94a046e`; the user pushes from their own terminal. Rule 9 now says: push only on explicit request.
+- Recheck on 40 articles: container exit 0 `skipped=40`; `verify_articles.py` 40/40 vs the live site; chat answer for the YouTube question has 1 literal `Article URL:` line and 3 chunks from the right article.
+- Off-topic probe (`gemini-3.5-flash` and lite, 4 questions): 3/4 clean refusals ("I can only answer using our documentation"); the weather question is answered from the Weather Wall cities article. Logged as backlog B22 (accepted: prompt is verbatim).
+
+### Step 7 - scripts and README as a user guide (2026-10-31)
+- Real OptiBot screenshots (user): short 3-step answer with a titled link, refuses the Paris weather question outright, has chat memory and tool steps. Our bot: prompt + File Search only (the task's scope); differences logged, guardrail ideas declined (D28, backlog B24).
+- Latency probe (single measurements): imports 0.2 s, store lookup 0.7 s, `gemini-3.5-flash` 13.7 s (575 thinking tokens), lite 5.5 s; 429 RESOURCE_EXHAUSTED on the free tier appeared during the probe; `thinking_budget=0` dropped the `Article URL:` line. `chat.py` now prints a status line, retry reasons (stderr) and the answer time.
+- New `scripts/sync_docs.py` (runs `main.main()`), `scripts/check_store.py` (read-only comparison of store vs `articles/`, `--list`, exit 1 when different) with 4 offline tests (102 passed + 1 xfail). All three run from any directory (verified from /tmp): `check_store` 40/40 in sync, `sync_docs` skipped=40, `chat` correct answer with one `Article URL:` line (24.8 s that time).
+- README rewritten as a 51-line guide: scripts table, 5-minute quick start, how it works (chunking explained), evidence section (2 TODOs: Actions run link, screenshot), limits.

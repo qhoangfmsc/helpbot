@@ -76,6 +76,12 @@ logged `chunks_estimated` uses `chars / 4`. Values are constants in `chunking.py
 (0/4 answers), `gemini-3.5-flash` follows it (4/4). Document layout did not matter. Model names drift (`gemini-2.5-*` already return 404), so
 the script has fallbacks and a `GEMINI_MODEL` override.
 
+## 8c. Scripts
+Three user-facing scripts, each a thin entry point over the package (one implementation, no copies): `sync_docs.py` runs `main.main()` (same job as the
+daily workflow), `check_store.py` is read-only (reuses `plan_delta` to compare the store with `articles/`), `chat.py` asks the bot. Each one finds the repo
+root and `.env` from its own location, so it works from any directory. Dev tools: `check_markdown.py`, `verify_articles.py`, `demo_delta.py`.
+`chat.py` prints a status line and the answer time, because a request takes 5-25 s (see backlog B23).
+
 ## 9. Tests
 - Offline, fast, no real keys. Layout follows the rubric: `tests/scrape_quality`, `tests/vector_upload`, `tests/daily_job`, `tests/repo_hygiene`.
 - Shared fakes live in `tests/support.py` (`FakeStore`, `run_main`). Real-API checks are scripts, not tests: `scripts/demo_delta.py`,

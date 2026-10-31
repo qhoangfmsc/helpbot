@@ -40,7 +40,7 @@ prompts/         # system_prompt.txt
 config/          # article_ids.txt: the 40 articles the job syncs (includes the YouTube article)
 articles/        # the 40 Markdown files: job output, committed so reviewers can read them
 data/            # git-ignored scratch space for experiments
-scripts/         # small dev helpers (e.g. markdown checker)
+scripts/         # user-facing: sync_docs.py, check_store.py, chat.py (documented in README); dev: check_markdown, verify_articles, demo_delta
 .claude/skills/  # spec-recheck, md-quality-check, api-docs-check, verify-submission
 ```
 
