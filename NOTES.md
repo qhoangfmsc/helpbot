@@ -1,5 +1,7 @@
 # Working notes
 
+> Historical log. Entries before step 3 mention a 417-article corpus that was only used for testing; since D24 the project covers exactly the 40 articles in `config/article_ids.txt`.
+
 Append-only log of decisions, confirmed facts and what was done per step. Newest step last.
 
 ## Decisions
@@ -28,6 +30,8 @@ Append-only log of decisions, confirmed facts and what was done per step. Newest
 | D23 | New version is uploaded before the old one is deleted; a crash leaves a duplicate that the next run removes | Never leave an article without a document |
 | D24 | Job scope = the 40 articles in `config/article_ids.txt` (same as `samples/articles`, includes YouTube); `ARTICLE_IDS_FILE=` empty = all | User instruction: match the flow reviewers actually run; 417 was for testing |
 | D25 | Commits made on explicit request after showing the list; first batch = 3 commits (0d276a0, 599b31d, 94a046e) | D20/D17 |
+| D26 | `scripts/chat.py` default model = `gemini-3.5-flash` (follows the `Article URL:` instruction, lite does not); document layout unchanged | measured 4/4 vs 0/4 |
+| D27 | One folder `articles/` (committed job output) replaces `data/` + `samples/`; no "all articles" mode | User instruction: only the 40 articles matter |
 | D17 | Commits need an explicit request AND a second confirmation after I show files + messages | User instruction (2026-10-31) |
 | D13 | Plan each step before doing it; settle open items from the previous step first | User instruction |
 
@@ -132,3 +136,14 @@ Append-only log of decisions, confirmed facts and what was done per step. Newest
 - Scope standardised to 40 articles: `config/article_ids.txt` (ids of `samples/articles`), `load_ids`/`select_ids` in `helpbot/scrape.py`, `main.py` reads `ARTICLE_IDS_FILE` (default that file; empty = all), Dockerfile copies `config/`. 10 new tests (98 passed + 1 xfail).
 - Deleted the 417-document test store `helpbot-docs` (my own test resource; otherwise 377 orphans would trip the 50% deletion guard) and let the job recreate it: run1 `added=40 failed=0`, run2 `skipped=40`, container run `skipped=40` exit 0; chat answer for the YouTube question correct (3 chunks, right article, 0 literal `Article URL:` lines).
 - GitHub Actions needs a *repository* secret (the workflow has no `environment:`), see README.
+
+### Step 4 - verify-submission and B1 (2026-10-31)
+- verify-submission local checks: no `.env` tracked; exact key value absent from HEAD and all history; no key-shaped strings; no company name in commit messages (17 tracked file names contain it only because scraped article slugs do); 98 tests pass; README 51 lines, 2 TODOs left (log link, screenshot). Remote `origin` = github.com/qhoangfmsc/helpbot, main pushed up to `94a046e`; local is 1 commit ahead plus this step's changes. `gh` is not installed here, so I could not read the Actions runs.
+- B1 experiment (throwaway stores, 8 YouTube-related articles, temp 0): layouts V0/V1 (URL after each heading)/V2 (URL every ~1000 chars) all 0/6 literal `Article URL:` answers on `gemini-3.5-flash-lite`. Models on the unchanged layout: lite 0/4, `gemini-3.5-flash` 4/4, `gemini-3-flash-preview` 3/4. Decision D26: `chat.py` defaults to `gemini-3.5-flash`; the layout stays as is. One answer from flash had 6 bullets (prompt: max 5).
+- All experiment stores deleted; only `helpbot-docs` (40 documents) remains.
+
+### Step 5 - single folder, 40 articles only (2026-10-31)
+- Found: the store had 417 documents because the first GitHub Actions run used the pushed commit `94a046e` (before the 40-article scope); the scope commit `8ce75c4` was not pushed yet. The 50% deletion guard would have refused to prune 377 orphans, so the store was deleted and recreated by the job: run1 `added=40`, run2 `skipped=40`.
+- `data/` and `samples/` merged into one committed folder `articles/` (job output; git sees 40 renames at 100% similarity, so the job rewrites identical bytes). `scripts/make_samples.py` removed (the id list is the source), `verify_samples.py` -> `verify_articles.py`, test file renamed. Default `ARTICLES_DIR=articles`.
+- The "all articles" mode is removed: `main.py` always reads the id list (exit 2 if the file is missing/invalid). Tests build an id list from the articles they provide. All mentions of the larger corpus removed from code, tests, README, docs (this log keeps its history).
+- Decision D27: scope is exactly the 40 listed articles; to change it edit `config/article_ids.txt`.

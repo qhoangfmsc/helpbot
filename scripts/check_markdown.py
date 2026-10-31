@@ -1,4 +1,4 @@
-"""Lint the scraped Markdown corpus. Usage: python scripts/check_markdown.py [dir]  (exit 1 on failures)."""
+"""Lint the scraped Markdown corpus. Usage: python scripts/check_markdown.py [dir=articles]  (exit 1 on failures)."""
 
 import re
 import sys
@@ -39,7 +39,7 @@ def check(path: Path) -> list[str]:
 
 
 def main() -> int:
-    folder = Path(sys.argv[1] if len(sys.argv) > 1 else "data/articles")
+    folder = Path(sys.argv[1] if len(sys.argv) > 1 else "articles")
     files = sorted(folder.glob("*.md"))
     failures = {f.name: p for f in files if (p := check(f))}
     stats = Counter()

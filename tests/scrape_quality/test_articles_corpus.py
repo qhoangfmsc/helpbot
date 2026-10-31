@@ -1,11 +1,11 @@
-"""The committed sample (samples/articles) is what a reviewer reads first: keep it spec-compliant."""
+"""The committed articles/ folder (the 40 synced articles) is what a reviewer reads first: keep it spec-compliant."""
 
 import importlib.util
 import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SAMPLES = sorted((ROOT / "samples" / "articles").glob("*.md"))
+ARTICLES = sorted((ROOT / "articles").glob("*.md"))
 
 _spec = importlib.util.spec_from_file_location("check_markdown", ROOT / "scripts" / "check_markdown.py")
 check_markdown = importlib.util.module_from_spec(_spec)
@@ -13,24 +13,24 @@ _spec.loader.exec_module(check_markdown)
 
 
 def all_text() -> str:
-    return "\n".join(p.read_text(encoding="utf-8") for p in SAMPLES)
+    return "\n".join(p.read_text(encoding="utf-8") for p in ARTICLES)
 
 
 def test_at_least_thirty_articles_are_committed():
-    assert len(SAMPLES) >= 30
+    assert len(ARTICLES) >= 30
 
 
 def test_every_sample_is_clean_markdown_with_a_single_article_url():
-    problems = {p.name: check_markdown.check(p) for p in SAMPLES if check_markdown.check(p)}
+    problems = {p.name: check_markdown.check(p) for p in ARTICLES if check_markdown.check(p)}
     assert problems == {}
 
 
 def test_file_names_follow_the_id_slug_scheme():
-    assert all(re.fullmatch(r"\d+-[a-z0-9-]+\.md", p.name) for p in SAMPLES)
+    assert all(re.fullmatch(r"\d+-[a-z0-9-]+\.md", p.name) for p in ARTICLES)
 
 
 def test_the_article_that_answers_the_sample_question_is_included():
-    assert any("youtube" in p.name for p in SAMPLES)
+    assert any("youtube" in p.name for p in ARTICLES)
 
 
 def test_headings_code_blocks_links_and_tables_are_preserved_somewhere():
@@ -48,8 +48,8 @@ def test_no_navigation_or_ad_boilerplate_survived():
         assert noise not in text
 
 
-def test_job_scope_file_lists_exactly_the_committed_samples_including_youtube():
+def test_job_scope_file_lists_exactly_the_committed_articles_including_youtube():
     from_file = (ROOT / "config" / "article_ids.txt").read_text(encoding="utf-8").splitlines()
     ids = [line for line in from_file if line and not line.startswith("#")]
-    assert sorted(ids) == sorted(p.name.split("-")[0] for p in SAMPLES)
+    assert sorted(ids) == sorted(p.name.split("-")[0] for p in ARTICLES)
     assert "360051014713" in ids  # "How to Use YouTube with ..." answers the sample question

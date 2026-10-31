@@ -60,9 +60,9 @@ File = `# Title`, blank, `Article URL: <html_url>`, blank, body. Name = `<id>-<s
 - Known limit: changing chunk settings alone does not change the hash (see backlog B2).
 
 ## 7b. Scope of the job
-- The job syncs the articles listed in `config/article_ids.txt` (40 ids = the committed `samples/articles`, generated together by
-  `scripts/make_samples.py`, includes the YouTube article). *Why:* it is the flow a reviewer will run and read; small, fast, within free-tier limits.
-- `ARTICLE_IDS_FILE=` (empty) = every published article. Used once at full scale (417 articles) to prove the delta rule; not the default.
+- The job syncs the articles listed in `config/article_ids.txt` (40 ids; the job writes them to the committed `articles/` folder, which a
+  test keeps in step with the list; includes the YouTube article). *Why:* it is the flow a reviewer will run and read; small, fast, within free-tier limits.
+- The job fetches the Help Center listing (a handful of paginated requests) and keeps only the listed ids; there is no "all articles" mode.
 - The list is the truth: documents of articles that left the list are deleted (still behind the 50% guard); an id that no longer
   exists on the site is only a warning. `ARTICLE_LIMIT=N` (newest N) is a partial mode and never deletes.
 
@@ -71,11 +71,16 @@ File = `# Title`, blank, `Article URL: <html_url>`, blank, body. Name = `<id>-<s
 steps together, the overlap protects sentences cut at a boundary. The API chunks server-side and does not report counts, so the
 logged `chunks_estimated` uses `chars / 4`. Values are constants in `chunking.py`, easy to tune.
 
+## 8b. Model choice
+`scripts/chat.py` uses `gemini-3.5-flash` by default. *Why:* measured, not assumed: the cheaper lite model ignores "Cite up to 3 `Article URL:` lines"
+(0/4 answers), `gemini-3.5-flash` follows it (4/4). Document layout did not matter. Model names drift (`gemini-2.5-*` already return 404), so
+the script has fallbacks and a `GEMINI_MODEL` override.
+
 ## 9. Tests
 - Offline, fast, no real keys. Layout follows the rubric: `tests/scrape_quality`, `tests/vector_upload`, `tests/daily_job`, `tests/repo_hygiene`.
 - Shared fakes live in `tests/support.py` (`FakeStore`, `run_main`). Real-API checks are scripts, not tests: `scripts/demo_delta.py`,
-  `scripts/verify_samples.py`, `scripts/chat.py`. *Why:* Gemini has rate limits and a key is required; pytest must be runnable by a reviewer.
-- Corpus tests use the **40 committed samples**; the full 417 only for a final or important check.
+  `scripts/verify_articles.py`, `scripts/chat.py`. *Why:* Gemini has rate limits and a key is required; pytest must be runnable by a reviewer.
+- Corpus tests use the **40 committed articles** only (Gemini has rate limits).
 - Every real bug found gets a test (whitespace glue, `<ol start>`, base64 image, empty fetch, unsafe delete).
 
 ## 10. Git

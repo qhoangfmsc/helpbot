@@ -1,8 +1,8 @@
 """Fact-check scraped Markdown against the live Help Center.
 
-Usage: python scripts/verify_samples.py [dir] [base_url]   (network; exit 1 on any failed check)
+Usage: python scripts/verify_articles.py [dir=articles] [base_url]   (network; exit 1 on any failed check)
 
-For every `<id>-<slug>.md` in `dir` (default samples/articles) the live article is fetched again and:
+For every `<id>-<slug>.md` in `dir` (default articles) the live article is fetched again and:
   1. title and `Article URL:` match the live article,
   2. the file is byte-identical to what the converter produces from the live article now (unchanged since scraping),
   3. words, link targets, image sources, code blocks and headings of the live HTML are all present in the Markdown
@@ -104,7 +104,7 @@ def check(path: Path, live: dict, page: requests.Response | None) -> list[str]:
 
 
 def main() -> int:
-    folder = Path(sys.argv[1] if len(sys.argv) > 1 else "samples/articles")
+    folder = Path(sys.argv[1] if len(sys.argv) > 1 else "articles")
     base = sys.argv[2] if len(sys.argv) > 2 else DEFAULT_BASE_URL
     session = retrying_session()
     session.headers["User-Agent"] = "Mozilla/5.0 (compatible; helpbot-verify)"

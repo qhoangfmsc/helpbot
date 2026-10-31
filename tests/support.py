@@ -61,7 +61,9 @@ def run_main(monkeypatch, tmp_path, store, articles, **env) -> int:
     monkeypatch.setattr(main, "load_dotenv", lambda: None)
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     monkeypatch.setenv("ARTICLES_DIR", str(tmp_path / "out"))
-    monkeypatch.setenv("ARTICLE_IDS_FILE", "")  # all articles, unless a test sets a file
+    ids = tmp_path / "default_ids.txt"  # by default the job is told to sync exactly the articles the test provides
+    ids.write_text("\n".join(a.id for a in articles) + "\n", encoding="utf-8")
+    monkeypatch.setenv("ARTICLE_IDS_FILE", str(ids))
     for key, value in env.items():
         monkeypatch.setenv(key, value)
     monkeypatch.setattr(main, "fetch_articles", lambda base_url: iter(articles))

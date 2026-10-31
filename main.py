@@ -15,7 +15,7 @@ from helpbot.zendesk import DEFAULT_BASE_URL, fetch_articles
 
 log = logging.getLogger("helpbot")
 
-DEFAULT_IDS_FILE = "config/article_ids.txt"  # the 40 articles the job keeps in sync; ARTICLE_IDS_FILE="" means all
+DEFAULT_IDS_FILE = "config/article_ids.txt"  # the 40 articles the job keeps in sync
 
 
 def main() -> int:
@@ -31,18 +31,17 @@ def main() -> int:
 
     articles = list(fetch_articles(os.environ.get("HELP_CENTER_URL", DEFAULT_BASE_URL)))
     ids_file = os.environ.get("ARTICLE_IDS_FILE", DEFAULT_IDS_FILE)
-    if ids_file:
-        try:
-            articles, missing = select_ids(articles, load_ids(Path(ids_file)))
-        except (OSError, ValueError) as error:
-            log.error("cannot use ARTICLE_IDS_FILE=%s: %s", ids_file, error)
-            return 2
-        if missing:
-            log.warning("%s listed article ids are not on the site any more: %s", len(missing), ", ".join(missing))
+    try:
+        articles, missing = select_ids(articles, load_ids(Path(ids_file)))
+    except (OSError, ValueError) as error:
+        log.error("cannot use ARTICLE_IDS_FILE=%s: %s", ids_file, error)
+        return 2
+    if missing:
+        log.warning("%s listed article ids are not on the site any more: %s", len(missing), ", ".join(missing))
     store = FileSearchStore.open(genai.Client(api_key=api_key), os.environ.get("GEMINI_FILE_SEARCH_STORE", DEFAULT_STORE_NAME))
     summary = run_job(
         articles,
-        Path(os.environ.get("ARTICLES_DIR", "data/articles")),
+        Path(os.environ.get("ARTICLES_DIR", "articles")),
         store,
         workers=int(os.environ.get("UPLOAD_WORKERS", "4")),
         limit=limit,

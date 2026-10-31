@@ -3,7 +3,7 @@
 Usage:
   python scripts/chat.py                          # interactive, empty line or Ctrl-D to quit
   python scripts/chat.py "How do I add a YouTube video?"   # one question
-Env: GEMINI_API_KEY, GEMINI_FILE_SEARCH_STORE (default helpbot-docs), GEMINI_MODEL (default gemini-3.5-flash-lite).
+Env: GEMINI_API_KEY, GEMINI_FILE_SEARCH_STORE (default helpbot-docs), GEMINI_MODEL (default gemini-3.5-flash).
 """
 
 import os
@@ -20,7 +20,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from helpbot.store import DEFAULT_STORE_NAME, FileSearchStore  # noqa: E402
 
 SYSTEM_PROMPT = Path(__file__).resolve().parent.parent.joinpath("prompts/system_prompt.txt").read_text(encoding="utf-8")
-FALLBACK_MODELS = ("gemini-flash-lite-latest", "gemini-3-flash-preview")
+# gemini-3.5-flash follows "cite Article URL: lines"; the lite models do not (measured, see docs/backlog.md B1)
+DEFAULT_MODEL = "gemini-3.5-flash"
+FALLBACK_MODELS = ("gemini-3-flash-preview", "gemini-flash-lite-latest")
 ARTICLE_URL_LINE = re.compile(r"^.*Article URL:.*$", re.M)
 
 
@@ -60,7 +62,7 @@ def main() -> int:
     load_dotenv()
     client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
     store = FileSearchStore.open(client, os.environ.get("GEMINI_FILE_SEARCH_STORE", DEFAULT_STORE_NAME))
-    model = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
+    model = os.environ.get("GEMINI_MODEL", DEFAULT_MODEL)
     if len(sys.argv) > 1:
         show(*ask(client, store.name, " ".join(sys.argv[1:]), model))
         return 0
