@@ -47,13 +47,13 @@ Whether you connect a new Facebook page or choose it from an existing on, you'll
 
 After that, you can enter information for your wall.
 
-- **Name**: Name of your Facebook Counter Wall, this is the name of the wall in your asset list. It will **not** be displayed on your screens.
-- **Page**: Page you want to use (if you have more than 1). **Important**: you can only set this one time during the creation of the asset, if you want to change this later, you should delete the old asset and create a new one.
+- **Name**: Name of your Facebook Counter Wall, this is the name of the wall in your asset list. It will **not** be displayed on your screens.
+- **Page**: Page you want to use (if you have more than 1). **Important**: you can only set this one time during the creation of the asset, if you want to change this later, you should delete the old asset and create a new one.
 - **Type**: There are two types: Like or Follower. You can select what do you want to show on your Facebook page.
 - **Title**: This is the Title you want to give your Counter. It will be displayed above the Counter.  
   This field is required.
 - **Text**: This is a description text you want to provide the viewer. i.e. Use case may be to instruct viewer to 'Like' your page by scanning QR.
-- **Theme**: Select Light (Facebook blue background) or Dark Theme (black background).
+- **Theme**: Select Light (Facebook blue background) or Dark Theme (black background).
 - **Show QR Code**: When checked, allows you to add a QR code. You can choose for the QR code to go to the Facebook page, or to any other page by choosing **Custom**.
 
   ![Show QR Code ticked, with the QR Code dropdown set to Custom](https://support.optisigns.com/hc/article_attachments/55283360530323)
@@ -86,4 +86,4 @@ You can also deploy it as part of a split screen, allowing you to show other ass
 
 ### That's all!
 
-If you have any additional questions, concerns or any feedback about OptiSigns, feel free to reach out to our support team at [support@optisigns.com](mailto:support@optisigns.com)
+If you have any additional questions, concerns or any feedback about OptiSigns, feel free to reach out to our support team at [support@optisigns.com](mailto:support@optisigns.com)

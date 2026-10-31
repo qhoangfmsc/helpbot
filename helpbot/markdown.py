@@ -2,14 +2,18 @@
 
 import re
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
 from markdownify import markdownify
 
 from helpbot.zendesk import Article
 
-_KEEP_ATTRS = {"a": {"href"}, "img": {"src", "alt"}, "iframe": {"src", "title"}}
+_KEEP_ATTRS = {"a": {"href"}, "img": {"src", "alt"}, "iframe": {"src", "title"}, "ol": {"start"}}  # `start`: steps continue across lists
 _IMAGE_PARENTS = ["td", "th", "a", "h1", "h2", "h3", "h4", "h5", "h6"]
-_BLANK_LINES =re.compile(r"\n{3,}")
+_INLINE_EMPHASIS = ["strong", "b", "em", "i", "u"]
+_SINGLE_CHILD_WRAPPERS = ["p", "figure", "strong", "b", "em", "i", "u"]
+_BLANK_LINES = re.compile(r"\n{3,}")
+_INVISIBLE = dict.fromkeys(map(ord, "\u200b\u200c\u200d\u2060\ufeff"))  # zero-width chars
+_HEADINGS = ["h1", "h2", "h3", "h4", "h5", "h6"]
 
 
 def slugify(article: Article) -> str:
@@ -48,8 +52,14 @@ def _normalize_table(soup: BeautifulSoup, table) -> None:
 
 def _clean(html: str) -> BeautifulSoup:
     soup = BeautifulSoup(html, "html.parser")
+    for text in soup.find_all(string=True):  # first, so `<h2>\u200b</h2>` counts as empty below
+        if type(text) is NavigableString:
+            text.replace_with(_normalize_chars(str(text)))
     for tag in soup(["script", "style", "noscript"]):
         tag.decompose()
+    for img in soup.find_all("img"):  # inline base64 image: ~100 KB of noise for search, and it breaks the store upload
+        if (img.get("src") or "").startswith("data:"):
+            img.replace_with(img.get("alt") or "")
     for anchor in soup.find_all("a", attrs={"name": True}):
         if not anchor.get_text(strip=True):  # empty in-page jump targets
             anchor.decompose()
@@ -65,16 +75,31 @@ def _clean(html: str) -> BeautifulSoup:
             frame.decompose()
     for table in soup.find_all("table"):
         _normalize_table(soup, table)
-    for img in soup.select("td img, th img"):  # markdownify only looks at the direct parent
-        while img.parent.name in ("p", "figure") and len(img.parent.contents) == 1:
-            img.parent.unwrap()
+    for img in soup.find_all("img"):  # markdownify only looks at the direct parent of an inline-context image
+        if img.find_parent(_IMAGE_PARENTS):
+            while img.parent.name in _SINGLE_CHILD_WRAPPERS and len(img.parent.contents) == 1:
+                img.parent.unwrap()
     for tag in soup.find_all(True):
         allowed = _KEEP_ATTRS.get(tag.name, set())
         tag.attrs = {k: v for k, v in tag.attrs.items() if k in allowed}
-    for tag in soup.find_all(["p", "span", "li"]):  # empty wrappers left by the editor
+    for span in soup.find_all("span"):  # styling only; unwrap (not drop) so spaces between inline tags survive
+        span.unwrap()
+    for tag in soup.find_all(_INLINE_EMPHASIS):  # `<strong> </strong>` is just a space, Markdown would drop it
+        if not tag.get_text(strip=True) and not tag.find(["img", "a"]):
+            tag.replace_with(" " if tag.get_text() else "")
+    for link in soup.find_all("a"):  # a link with neither text nor image points at nothing visible
+        if not link.get_text(strip=True) and not link.find("img"):
+            link.decompose()
+    for tag in soup.find_all(["p", "li", *_HEADINGS]):  # empty wrappers left by the editor
         if not tag.get_text(strip=True) and not tag.find(["img", "a"]):
             tag.decompose()
     return soup
+
+
+def _normalize_chars(text: str) -> str:
+    """Non-breaking spaces become plain spaces and zero-width characters are removed (also inside code:
+    in practice they are copy-paste artefacts there, and they would break copying a command)."""
+    return text.replace("\xa0", " ").translate(_INVISIBLE)
 
 
 def html_to_markdown(html: str) -> str:
@@ -85,10 +110,11 @@ def html_to_markdown(html: str) -> str:
         escape_underscores=False,
         keep_inline_images_in=_IMAGE_PARENTS,  # by default images in tables/links/headings are dropped
     )
-    return _BLANK_LINES.sub("\n\n", text).strip()
+    return _BLANK_LINES.sub("\n\n", _normalize_chars(text)).strip()
 
 
 def render_article(article: Article) -> str:
     """Final file content. `Article URL:` is a literal line so the bot can cite it."""
+    title = " ".join(_normalize_chars(article.title).split())
     body = html_to_markdown(article.body_html)
-    return f"# {article.title}\n\nArticle URL: {article.html_url}\n\n{body}\n"
+    return f"# {title}\n\nArticle URL: {article.html_url}\n\n{body}\n"

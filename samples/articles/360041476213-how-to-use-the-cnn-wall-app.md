@@ -33,7 +33,7 @@ First, you will need to have your screens set up and paired. For more informatio
 
 Then log on to our portal: [https://app.optisigns.com/](http://app.optisigns.com/)
 
-Go to **Files/Assets**, Click on "Apps" and add **CNN** on your Account.
+Go to **Files/Assets**, Click on "Apps" and add **CNN** on your Account.
 
 ![The Files/Assets page with the Apps button highlighted in the left sidebar.](https://support.optisigns.com/hc/article_attachments/55252921439379)
 
@@ -54,7 +54,7 @@ Enter your CNN Wall App information:
 
 - Font Size: Set the font size for the CNN Wall app.
 
-Clicking **Advanced**opens up additional options:
+Clicking **Advanced** opens up additional options:
 
 ![Advanced expanded, showing the Date and Time and Scrolling Strip Font Size fields.](https://support.optisigns.com/hc/article_attachments/55252921446675)
 

@@ -22,21 +22,21 @@ OptiSigns player is smart enough to scan for changes in these folders. When file
 
 You can also use USB thumb drives. OptiSigns detects drives plugged in and scan the folder to play again as long as it's given the correct path.
 
-> **Note:**The Local folder application only currently supports video and image files.
+> **Note:** The Local folder application only currently supports video and image files.
 
 ---
 
 ## **How to Set Up the Local Folder App**
 
-First, you will need to have your screens set up and paired. For more information on how to do that, click [here](https://www.optisigns.com/blog/how-to-set-up-digital-signs-with-optisigns-and-amazon-fire-tv).
+First, you will need to have your screens set up and paired. For more information on how to do that, click [here](https://www.optisigns.com/blog/how-to-set-up-digital-signs-with-optisigns-and-amazon-fire-tv).
 
-Then log on to our portal: <https://app.optisigns.com/>
+Then log on to our portal: <https://app.optisigns.com/>
 
 Go to **Files/Assets** and click on **"Apps"**:
 
 ![Files/Assets page with a red arrow pointing at the Apps button in the left sidebar](https://support.optisigns.com/hc/article_attachments/55666381491987)
 
-Find the **Local Folder** app:
+Find the **Local Folder** app:
 
 ![Add App dialog searched for Local Folder, red arrow pointing at the Local Folder app tile](https://support.optisigns.com/hc/article_attachments/55666355587603)
 
@@ -44,7 +44,7 @@ Enter your **local folder path** (detailed instructions per platform below) and 
 
 ![Local Folder settings form: Name, Local Folder, transition, duration, scaling and Shuffle fields](https://support.optisigns.com/hc/article_attachments/55666355588627)
 
-- **Name** - Name of your Local Folder app. This will be displayed on your asset list, and will **not** be displayed on your screens.
+- **Name** - Name of your Local Folder app. This will be displayed on your asset list, and will **not** be displayed on your screens.
 - **Local Folder** - Path to the folder on your device. We will provide detailed instructions per platform later in this article.
 - **Transition Effects** - Transition effect between your images and videos in the folder.
 - **Transition Speed** - How fast you want your transitions to animate.
@@ -142,4 +142,4 @@ Examples (Assuming 3 USB drives named USB1, USB2, USB3, and an SD card named SDC
 
 ### **That's all!**
 
-If you have any additional questions, concerns or any feedback about OptiSigns, feel free to reach out to our support team at [support@optisigns.com](mailto:support@optisigns.com).
+If you have any additional questions, concerns or any feedback about OptiSigns, feel free to reach out to our support team at [support@optisigns.com](mailto:support@optisigns.com).

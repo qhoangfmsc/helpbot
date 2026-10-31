@@ -6,7 +6,7 @@ Article URL: https://support.optisigns.com/hc/en-us/articles/28295104605843-How-
 
 > Use Case
 >
-> A clothing store uses a rotating playlist on their screens  to showcase seasonal collections, promotions, and styling tips. This dynamic display engages customers, keeps content fresh, and drives sales by highlighting new arrivals and special offers.
+> A clothing store uses a rotating playlist on their screens to showcase seasonal collections, promotions, and styling tips. This dynamic display engages customers, keeps content fresh, and drives sales by highlighting new arrivals and special offers.
 
 > **NOTE**
 >

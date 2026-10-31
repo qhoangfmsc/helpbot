@@ -16,4 +16,4 @@ A church is broadcasting their Sunday 9AM session on YouTube Live, the church al
 
 In this case, you should use our [YouTube Live Schedule app](https://support.optisigns.com/hc/en-us/articles/360060284174)
 
-If you have any additional questions, concerns or any feedback about OptiSigns, feel free to reach out to our support team at [support@optisigns.com](mailto:support@optisigns.com)
+If you have any additional questions, concerns or any feedback about OptiSigns, feel free to reach out to our support team at [support@optisigns.com](mailto:support@optisigns.com)

@@ -53,7 +53,7 @@ To set up a video wall for use in the Video Wall app, you’ll need:
 
 With the Video Wall app, you can push content to multiple screens at once. There are a few things to keep in mind:
 
-- The ProMax Player is our ***most recommended***option if you're looking to use a video wall with digital signage. It allows for 4K video per screen and our full range of options, with up to four screens usable in any orientation.
+- The ProMax Player is our ***most recommended*** option if you're looking to use a video wall with digital signage. It allows for 4K video per screen and our full range of options, with up to four screens usable in any orientation.
 - The Pro Player can handle up to 3 screens at a time, at 1080p max resolution.
 - You are unable to output to multiple screens at once without the Video Wall app.
 
@@ -119,7 +119,7 @@ You’ll be prompted to select the number of screens and their orientation:
 
 > **NOTE**
 >
-> **4 Screens**are only available using the **OptiSigns ProMax Player.**The regular Pro Player can handle 2 or 3 screens.
+> **4 Screens** are only available using the **OptiSigns ProMax Player.** The regular Pro Player can handle 2 or 3 screens.
 
 Once selected, you’ll have a couple options: you can build a basic video wall, or create a continuous one.
 
@@ -145,7 +145,7 @@ Clicking the **Gear** icon will lead you to this screen:
 
 ![picture of video wall configs menu with audio zone and primary zone options](https://support.optisigns.com/hc/article_attachments/33382521817235)
 
-**Audio Zone** - Lets you choose which screen the audio will come from. This can be **All**, or any one of the **HDMI ports**you've assigned a screen to.
+**Audio Zone** - Lets you choose which screen the audio will come from. This can be **All**, or any one of the **HDMI ports** you've assigned a screen to.
 
 **Primary Zone** - Setting one of your screens as a Primary Zone will provide a better experience or smoother content transition when you need to coordinate contents in different zones and put use the video wall app in a playlist.
 
@@ -247,7 +247,7 @@ Remember: in most setups, the player will be facing outward, with the AV ports f
 
 ![video wall hdmi diagram](https://support.optisigns.com/hc/article_attachments/36987172953491)
 
-**HD-A-1** goes to your farthest left or most vertical screen, **HD-A-2** goes to your middle screen, and **HD-A-3** goes to the farthest right or bottom screen. If using just two screens, HD-A-3 is not needed.
+**HD-A-1** goes to your farthest left or most vertical screen, **HD-A-2** goes to your middle screen, and **HD-A-3** goes to the farthest right or bottom screen. If using just two screens, HD-A-3 is not needed.
 
 ---
 
@@ -333,7 +333,7 @@ Then you can plug in FireStick, or any other player running OptiSigns and have i
 
 Note that if your wall is big, you should use a Video Controller with 4K support, and use FireStick 4K or equivalent devices to output 4K high-resolution content, which will help the quality of your video wall.
 
-If you have feedback on how to make the how-to guides better, please let us know at: [support@optisigns.com](mailto:support@optisigns.com)
+If you have feedback on how to make the how-to guides better, please let us know at: [support@optisigns.com](mailto:support@optisigns.com)
 
 ---
 

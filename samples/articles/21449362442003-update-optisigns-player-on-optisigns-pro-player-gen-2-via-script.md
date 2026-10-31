@@ -23,7 +23,7 @@ Other command line scripts:
 - If your TV has color saturation issues, run this command to fix it:  
 
   ```
-  wget -O- https://download.optisignsapp.com/pro-player/change-color-profile.sh | bash 
+  wget -O- https://download.optisignsapp.com/pro-player/change-color-profile.sh | bash
   ```
 - Overwrite the automatic security updates timing
 
@@ -41,4 +41,4 @@ Other command line scripts:
   ~/bin/optisigns-unlockusb.sh
   ```
 
-If you have any additional questions or any feedback about OptiSigns, feel free to reach out to our support team at [support@optisigns.com](mailto:support@optisigns.com)
+If you have any additional questions or any feedback about OptiSigns, feel free to reach out to our support team at [support@optisigns.com](mailto:support@optisigns.com)

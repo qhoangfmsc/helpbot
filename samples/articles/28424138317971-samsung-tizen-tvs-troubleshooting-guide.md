@@ -46,4 +46,4 @@ Here are a few known workarounds:
 
 - Keep all videos encoded in h264, but ensure the resolution for all videos are the same.
   - In other words, don't switch between HD (1980x1080) and 4K (3840x2160) videos.
-- Re-encode all videos to h265 (we recommend [**Handbrake**](https://handbrake.fr/)for this). This way, all the videos can keep their resolution.
+- Re-encode all videos to h265 (we recommend [**Handbrake**](https://handbrake.fr/) for this). This way, all the videos can keep their resolution.

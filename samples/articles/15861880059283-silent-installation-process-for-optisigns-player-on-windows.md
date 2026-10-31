@@ -2,7 +2,7 @@
 
 Article URL: https://support.optisigns.com/hc/en-us/articles/15861880059283-Silent-Installation-process-for-OptiSigns-Player-on-Windows
 
-By default, when you install the OptiSigns Windows player on your Windows device, it will be installed on your default user profile.   
+By default, when you install the OptiSigns Windows player on your Windows device, it will be installed on your default user profile.   
   
 If you want to do the silent install in another folder instead of the default user profile. This will be helpful for looking for mass provisioning on Windows and deploying with a prebuilt Windows image.
 
@@ -42,4 +42,4 @@ or
 
 Then it will install in that folder.
 
-If you have any additional questions or any feedback about OptiSigns, feel free to reach out to our support team at [support@optisigns.com](mailto:support@optisigns.com)
+If you have any additional questions or any feedback about OptiSigns, feel free to reach out to our support team at [support@optisigns.com](mailto:support@optisigns.com)

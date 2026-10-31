@@ -85,8 +85,8 @@ Once your data source is set up, you can see **Where Used, Edit** the data sourc
 ![](https://support.optisigns.com/hc/article_attachments/29689445946003)
 
 - **Where Used:** This will show you which of your designs are using this Data Source. This is useful to track the use of this data source across different assets.
-- **Edit Data:**Go into your data source and make any updates/changes.
-- **Duplicate:**This will create a copy of your data source.
+- **Edit Data:** Go into your data source and make any updates/changes.
+- **Duplicate:** This will create a copy of your data source.
 
 ![](https://support.optisigns.com/hc/article_attachments/29689413996947)
 
@@ -159,7 +159,7 @@ You can also adjust the formatting of a Repeater by selecting it, then selecting
 
 ![](https://support.optisigns.com/hc/article_attachments/42705270087059)
 
-This will open up the **Data Mapping**section for the Repeater on the Side Menu:
+This will open up the **Data Mapping** section for the Repeater on the Side Menu:
 
 ![](https://support.optisigns.com/hc/article_attachments/53326317461011)
 
@@ -173,14 +173,14 @@ Then, these options will be presented:
   - **Skip:** Skip it, or get rid of additional repeater items if there isn't enough data to reach the set "Total Items displayed per Page".
   - **Use Default Value:** Show default content, which is what your Repeater element looks like by itself.
   - **Use Blank:** The Repeater will show nothing.
-- **Spacing Between Items:**Increase or decrease the space between the Repeater items.
-- **Item Display Direction:** Change the positioning of the rows from your DataSource within the Repeater items.   
+- **Spacing Between Items:** Increase or decrease the space between the Repeater items.
+- **Item Display Direction:** Change the positioning of the rows from your DataSource within the Repeater items.   
   - **Left To Right**: It will display the rows going from left to right.
   - **Top To Bottom**: It will display the rows going top to bottom.
 - **Item Display Alignment:** Change the alignment of the remaining element items (less than the configured items) to be aligned left/center/right or top/center/bottom.
 - **Total Items Displayed per Page:** Increase or decrease how many Repeater items you'd like to be shown.
 - **Maximum Items in Each Row/Column:** Increase or decrease how many Repeater items you'd like shown in each row/column.
-- **Additional Row/Column Spacing:** Increase or decrease the spacing between rows/columns.![](https://support.optisigns.com/hc/article_attachments/53326329465619)
+- **Additional Row/Column Spacing:** Increase or decrease the spacing between rows/columns.![](https://support.optisigns.com/hc/article_attachments/53326329465619)
 - **Duration (seconds):** Adjust the duration of time for how long each Repeater item is shown before.
 - **Page Transition:** Create a page transition for your Repeater. You can choose between Fade and Carousel options, or None at all.
 - **Sort by:** Allows you to quickly sort Repeaters by any data field, with quick filter shortcuts.
@@ -255,7 +255,7 @@ If you'd like to change how the formatting of certain data from your DataSource 
 
 Once your design is completed, it is ready to push to screen.
 
-*(Here's* [***a guide***](https://support.optisigns.com/hc/en-us/articles/18988049363859)*if you need further assistance with this.)*
+*(Here's* [***a guide***](https://support.optisigns.com/hc/en-us/articles/18988049363859) *if you need further assistance with this.)*
 
 ![](https://support.optisigns.com/hc/article_attachments/42702980943507)
 

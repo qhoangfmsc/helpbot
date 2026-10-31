@@ -38,8 +38,8 @@ For an in-depth instructional video on how to dynamically map a birthday list to
 
 If none of the Repeater designs resonate with the design you are trying to accomplish, you can create your own design within the repeater itself from scratch. Here's how:
 
-1. Open the**Designer app**
-2. Go to**DataSource**→
+1. Open the **Designer app**
+2. Go to **DataSource** →
    Select your custom DataSource → Expand "**Row 1**".
 3. **Drag** **and** **drop** the
    information you want displayed on the Repeater.
@@ -49,7 +49,7 @@ If none of the Repeater designs resonate with the design you are trying to accom
 
    <https://www.canva.com/design/DAGHR6E4VRs/zBax4Wv1Ri94WCUjt3yBfg/view?embed>
 
-After creating it, feel free to add the repeater to any template design,  create your own design or upload one of your choosing.
+After creating it, feel free to add the repeater to any template design, create your own design or upload one of your choosing.
 
 ### Option 2: Full Repeater Template
 

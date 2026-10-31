@@ -38,7 +38,7 @@ Refer to Toast's documentation [here](https://doc.toasttab.com/doc/devguide/port
 
 > **NOTE**
 >
-> To read data from Toast's API, you need [**Toast Standard API access**](https://doc.toasttab.com/doc/devguide/devApiAccessUserGuide.html)**.**This usually comes with an additional charge (to Toast) of $25/month per location.
+> To read data from Toast's API, you need [**Toast Standard API access**](https://doc.toasttab.com/doc/devguide/devApiAccessUserGuide.html)**.** This usually comes with an additional charge (to Toast) of $25/month per location.
 
 ---
 
@@ -93,7 +93,7 @@ The final request will look something like this:
 
 You can enable this request and Save the Request. Click **Run Test**.
 
-You should receive a *(200 OK)* response, with data returning from the API. This means the API request has successfully contacted Toast and is transferring data.
+You should receive a *(200 OK)* response, with data returning from the API. This means the API request has successfully contacted Toast and is transferring data.
 
 ![Response (200 OK) showing menu data returned from the Toast API](https://support.optisigns.com/hc/article_attachments/31870683910291)
 

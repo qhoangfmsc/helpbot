@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from typing import Iterator
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 log = logging.getLogger(__name__)
 
@@ -12,6 +14,8 @@ DEFAULT_BASE_URL = "https://support.optisigns.com"
 DEFAULT_LOCALE = "en-us"
 PER_PAGE = 100
 TIMEOUT_SECONDS = 30
+RETRY_STATUSES = (429, 500, 502, 503, 504)
+MAX_RETRY_AFTER_SECONDS = 60  # cap a server-sent Retry-After so a cron run cannot hang for hours
 
 
 @dataclass(frozen=True)
@@ -23,13 +27,28 @@ class Article:
     body_html: str
 
 
+def retrying_session() -> requests.Session:
+    """Session that retries transient failures with exponential backoff (honours a capped Retry-After)."""
+    retry = Retry(
+        total=5,
+        backoff_factor=1.0,
+        status_forcelist=RETRY_STATUSES,
+        respect_retry_after_header=True,
+        retry_after_max=MAX_RETRY_AFTER_SECONDS,
+    )
+    session = requests.Session()
+    session.mount("https://", HTTPAdapter(max_retries=retry))
+    session.mount("http://", HTTPAdapter(max_retries=retry))
+    return session
+
+
 def fetch_articles(
     base_url: str = DEFAULT_BASE_URL,
     locale: str = DEFAULT_LOCALE,
     session: requests.Session | None = None,
 ) -> Iterator[Article]:
     """Yield every published article, following Zendesk's `next_page` links."""
-    session = session or requests.Session()
+    session = session or retrying_session()
     url: str | None = f"{base_url}/api/v2/help_center/{locale}/articles.json"
     params: dict[str, int] | None = {"per_page": PER_PAGE}
     while url:

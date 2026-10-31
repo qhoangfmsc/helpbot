@@ -147,9 +147,9 @@ Instead of entering the address and settings on each display, you can put them i
 {"serverIp": "0.0.0.0", "serverPort": 0, "secureConnection": false, "fqdnMode": true, "fqdnAddr": "https://links.optisigns.com/lg", "appLaunchMode": "local", "appType": "ipk"}
 ```
 
-1. Copy the file into the root of the USB drive.
-2. Insert the USB drive into the display, then turn it on or restart it.
-3. When the installation finishes, restart the display. The OptiSigns app starts by itself.
+2. Copy the file into the root of the USB drive.
+3. Insert the USB drive into the display, then turn it on or restart it.
+4. When the installation finishes, restart the display. The OptiSigns app starts by itself.
 
 ---
 

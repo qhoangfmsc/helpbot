@@ -8,6 +8,7 @@ from pathlib import Path
 FENCE = re.compile(r"^[ \t]*```.*?^[ \t]*```", re.S | re.M)  # fences may be indented inside lists
 HTML_TAG = re.compile(r"</?(div|span|table|thead|tbody|tr|td|th|figure|p|br|strong|em|script|style)[\s>/]")
 MIN_BODY_CHARS = 120
+MAX_LINE_CHARS = 5000
 
 
 def check(path: Path) -> list[str]:
@@ -22,6 +23,14 @@ def check(path: Path) -> list[str]:
         problems.append("leftover HTML tags outside code blocks")
     if re.search(r"^\|\s*\|\s*\|?\s*$", prose, re.M) and re.search(r"^\| --- \|", prose, re.M):
         problems.append("table with fully empty header or row")
+    if re.search(r"^#{1,6}\s*$", prose, re.M):
+        problems.append("empty heading")
+    if re.search("[\u00a0\u200b\u200c\u200d\u2060\ufeff]", text):
+        problems.append("non-breaking or zero-width character")
+    if "](data:" in text:
+        problems.append("inline base64 image")
+    if max(map(len, text.splitlines()), default=0) > MAX_LINE_CHARS:
+        problems.append(f"line longer than {MAX_LINE_CHARS} chars")
     if len(text) < MIN_BODY_CHARS:
         problems.append(f"suspiciously short ({len(text)} chars)")
     if prose.count("```") % 2:

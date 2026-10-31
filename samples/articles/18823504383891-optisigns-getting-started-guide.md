@@ -25,8 +25,8 @@ Article URL: https://support.optisigns.com/hc/en-us/articles/18823504383891-Opti
 
 #### Pick one of the 3 ways below to get OptiSigns running on your TV:
 
-1. The easiest way to get started is to get your favorite brand of TV and get our[**OptiSigns OptiStick**](https://shop.optisigns.com/products/optisigns-android-stick-player-2) to run OptiSigns on it. Follow [**this guide**](https://support.optisigns.com/hc/en-us/articles/27267311796243) to learn how to set up your OptiSigns Player
-2. Already have a TV or Signage Player? Go to our[**Downloads**](https://www.optisigns.com/download) page to see if our app can be installed on it.
+1. The easiest way to get started is to get your favorite brand of TV and get our [**OptiSigns OptiStick**](https://shop.optisigns.com/products/optisigns-android-stick-player-2) to run OptiSigns on it. Follow [**this guide**](https://support.optisigns.com/hc/en-us/articles/27267311796243) to learn how to set up your OptiSigns Player
+2. Already have a TV or Signage Player? Go to our [**Downloads**](https://www.optisigns.com/download) page to see if our app can be installed on it.
 3. Not ready for hardware purchase yet? Just download the [**Windows Player app**](https://links.optisigns.com/win) or [**MacOS Player app**](https://links.optisigns.com/mac) and use your laptop as test screen.
 
 Once OptiSigns App is installed, **launch it**.
@@ -51,7 +51,7 @@ A pop-up screen will appear, type in the **Pair Code** showing up on your screen
 | --- | --- |
 | ![](https://support.optisigns.com/hc/article_attachments/46546421111443) | ![](https://support.optisigns.com/hc/article_attachments/50176087631379) |
 
-Your screen should now say **Paired**, instead of showing the code.
+Your screen should now say **Paired**, instead of showing the code.
 
 <https://www.youtube.com/embed/iP9DDMkRry8?si=rhpxHEGZaRgZJf1b>
 
@@ -82,13 +82,13 @@ Then **drop**, **import**, or **browse** for files to upload to your account.
 
 ## **Push Content to Your Screen**
 
-Go back to the **Screens**page, and click **Edit**on your preferred screen. You can also click the **screen's name** on the new UI.
+Go back to the **Screens** page, and click **Edit** on your preferred screen. You can also click the **screen's name** on the new UI.
 
 | **OptiSigns 1.0** | **Updated** |
 | --- | --- |
 | ![](https://support.optisigns.com/hc/article_attachments/46546449262867) | ![](https://support.optisigns.com/hc/article_attachments/50176133846675) |
 
-For **Type**, select your desired content: asset, playlist or schedule. For this example, we chose an **Asset.**
+For **Type**, select your desired content: asset, playlist or schedule. For this example, we chose an **Asset.**
 
 Then, select your desired content from the drop down menu.
 
@@ -96,7 +96,7 @@ Then, select your desired content from the drop down menu.
 | --- | --- |
 | ![](https://support.optisigns.com/hc/article_attachments/46546421122451) | ![](https://support.optisigns.com/hc/article_attachments/50176087640979) |
 
-Finally, click **Save**. Your screen should refresh and display the content you've assigned it. It's that easy!
+Finally, click **Save**. Your screen should refresh and display the content you've assigned it. It's that easy!
 
 ---
 

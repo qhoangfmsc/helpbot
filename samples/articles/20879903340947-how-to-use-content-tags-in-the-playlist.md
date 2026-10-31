@@ -45,7 +45,7 @@ Then go to **Screens page** > Click **Edit** on your preferred screen > Assign y
 
 | **Inclusion** | **Exclusion** |
 | --- | --- |
-| **And:** Will show assets that have all the tags selected.  **Or:** Will show any asset with at least one of the tags selected. | **And:** Will **not show** any assets that have all tags selected.  **Or:** Will **not show** any asset with at least one of the tags selected. |
+| **And:** Will show assets that have all the tags selected.  **Or:** Will show any asset with at least one of the tags selected. | **And:** Will **not show** any assets that have all tags selected.  **Or:** Will **not show** any asset with at least one of the tags selected. |
 
 - **+ Rule:** Will add an additional box for you to add more tags.
 - **+Ruleset:** Will create additional rules to attach to your original tag rules.
@@ -85,7 +85,7 @@ To help illustrate how this feature works, we will use the following simple scen
 
 > **IMPORTANT NOTE**
 >
-> These Content Tag rules **will not**apply to screen Previews. This is because Previews are limited by web browser - your screen, however, should display properly.
+> These Content Tag rules **will not** apply to screen Previews. This is because Previews are limited by web browser - your screen, however, should display properly.
 
 - **Lobby Display:** Suppose your global playlist is tagged 'front-lobby' as the Playlist default. All assets within this playlist will be tagged as 'front-lobby.'
 
