@@ -3,7 +3,6 @@
 import re
 from pathlib import Path
 
-import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE_DIRS = ("helpbot", "scripts", "tests")
@@ -64,7 +63,6 @@ def test_readme_fits_one_page_and_has_the_required_sections():
         assert section.lower() in readme.lower(), section
 
 
-@pytest.mark.xfail(reason="README still has TODO sections: finish them before submitting", strict=False)
 def test_readme_has_no_todo_left():
     assert "TODO" not in (ROOT / "README.md").read_text()
 

@@ -42,7 +42,10 @@ failed, 2 config/key problem, 3 API/network problem (each prints a specific mess
 
 ## Evidence
 
-- **Daily job logs** (`.github/workflows/daily-sync.yml`, once a day, Docker, key in a repository secret): _TODO: link to the Actions run_.
+- **Daily job logs**: `.github/workflows/daily-sync.yml` builds the Docker image and runs the job once a day (01:00 UTC = 08:00 Vietnam time; the key is a repository secret).
+  Last run, started manually: [run #3, Success, 28 s, commit a80c530](https://github.com/qhoangfmsc/helpbot/actions/runs/41233639313) (GitHub asks for a
+  sign-in to open the raw log; the status and the `run-log` artifact are listed on the public run page). Its last log line:
+  `2026-10-31 19:19:30,826 INFO done added=0 updated=0 skipped=40 deleted=0 failed=0 files=0 chunks_estimated=0 store_documents=40`
 - **Assistant answer (screenshot)** to "How do I add a YouTube video?" (`python scripts/chat.py`): 5 steps, one `Article URL:` line, 3 retrieved chunks from the right
   article. The first attempt got an HTTP 503 from Gemini and the script retried by itself. The prompt is `prompts/system_prompt.txt` (verbatim).
 
