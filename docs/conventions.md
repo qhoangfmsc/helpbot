@@ -59,6 +59,13 @@ File = `# Title`, blank, `Article URL: <html_url>`, blank, body. Name = `<id>-<s
 - Hash = SHA-256 of the final Markdown. `ARTICLE_LIMIT=N` (newest N by `updated_at`) is a partial mode and **never deletes**.
 - Known limit: changing chunk settings alone does not change the hash (see backlog B2).
 
+## 7b. Scope of the job
+- The job syncs the articles listed in `config/article_ids.txt` (40 ids = the committed `samples/articles`, generated together by
+  `scripts/make_samples.py`, includes the YouTube article). *Why:* it is the flow a reviewer will run and read; small, fast, within free-tier limits.
+- `ARTICLE_IDS_FILE=` (empty) = every published article. Used once at full scale (417 articles) to prove the delta rule; not the default.
+- The list is the truth: documents of articles that left the list are deleted (still behind the 50% guard); an id that no longer
+  exists on the site is only a warning. `ARTICLE_LIMIT=N` (newest N) is a partial mode and never deletes.
+
 ## 8. Chunking
 400 tokens per chunk, 50 overlap (~12%). *Why:* articles average ~1.4k tokens and are step-by-step procedures; ~400 tokens keeps a few
 steps together, the overlap protects sentences cut at a boundary. The API chunks server-side and does not report counts, so the

@@ -46,3 +46,10 @@ def test_no_navigation_or_ad_boilerplate_survived():
     text = all_text().lower()
     for noise in ("skip to main content", "submit a request", "was this article helpful", "powered by zendesk"):  # Help Center chrome
         assert noise not in text
+
+
+def test_job_scope_file_lists_exactly_the_committed_samples_including_youtube():
+    from_file = (ROOT / "config" / "article_ids.txt").read_text(encoding="utf-8").splitlines()
+    ids = [line for line in from_file if line and not line.startswith("#")]
+    assert sorted(ids) == sorted(p.name.split("-")[0] for p in SAMPLES)
+    assert "360051014713" in ids  # "How to Use YouTube with ..." answers the sample question

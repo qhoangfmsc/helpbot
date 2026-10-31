@@ -26,6 +26,8 @@ Append-only log of decisions, confirmed facts and what was done per step. Newest
 | D21 | Chunking 400 tokens / 50 overlap; chunk count is a local estimate (`chars/4`), logged as `chunks_estimated` | API does not expose chunk counts; settings are tunable constants in `helpbot/chunking.py` |
 | D22 | Delete orphans (articles gone from the site) unless that would remove > 50% of the store or `MAX_ARTICLES` is set | A broken/partial fetch must not wipe the knowledge base |
 | D23 | New version is uploaded before the old one is deleted; a crash leaves a duplicate that the next run removes | Never leave an article without a document |
+| D24 | Job scope = the 40 articles in `config/article_ids.txt` (same as `samples/articles`, includes YouTube); `ARTICLE_IDS_FILE=` empty = all | User instruction: match the flow reviewers actually run; 417 was for testing |
+| D25 | Commits made on explicit request after showing the list; first batch = 3 commits (0d276a0, 599b31d, 94a046e) | D20/D17 |
 | D17 | Commits need an explicit request AND a second confirmation after I show files + messages | User instruction (2026-10-31) |
 | D13 | Plan each step before doing it; settle open items from the previous step first | User instruction |
 
@@ -124,3 +126,9 @@ Append-only log of decisions, confirmed facts and what was done per step. Newest
 - Chat check on the full store: correct 5-bullet answer for the YouTube question from the right article, 3 chunks, but 0 literal `Article URL:` lines (backlog B1).
 - Added `.github/workflows/daily-sync.yml` (once a day, Docker, secret key, log artifact + summary) and `tests.yml`; YAML validated, NOT yet run (needs the repo pushed to GitHub by the user, a secret and a first manual run).
 - Open: AI Studio cannot attach a File Search store (screenshot of the Tools panel) -> email the recruiter; deploy target decision; screenshot; README TODOs.
+
+### Step 3 - commits and 40-article scope (2026-10-31)
+- Created the 3 approved commits (fix(scrape), feat(sync), ci); author only the user; working tree clean afterwards.
+- Scope standardised to 40 articles: `config/article_ids.txt` (ids of `samples/articles`), `load_ids`/`select_ids` in `helpbot/scrape.py`, `main.py` reads `ARTICLE_IDS_FILE` (default that file; empty = all), Dockerfile copies `config/`. 10 new tests (98 passed + 1 xfail).
+- Deleted the 417-document test store `helpbot-docs` (my own test resource; otherwise 377 orphans would trip the 50% deletion guard) and let the job recreate it: run1 `added=40 failed=0`, run2 `skipped=40`, container run `skipped=40` exit 0; chat answer for the YouTube question correct (3 chunks, right article, 0 literal `Article URL:` lines).
+- GitHub Actions needs a *repository* secret (the workflow has no `environment:`), see README.

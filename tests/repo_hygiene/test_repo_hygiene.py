@@ -59,6 +59,7 @@ def test_dockerfile_runs_the_job_once_and_never_bakes_in_the_key():
     assert re.search(r'^CMD \["python", "main\.py"\]', dockerfile, re.M)  # runs once, then the container exits
     assert "GEMINI_API_KEY" not in dockerfile.replace("Needs GEMINI_API_KEY", "")
     assert re.search(r"^\.env$", (ROOT / ".dockerignore").read_text(), re.M)
+    assert "COPY config" in dockerfile  # the list of articles the job syncs must be inside the image
 
 
 def test_daily_workflow_runs_once_a_day_with_the_key_from_secrets():

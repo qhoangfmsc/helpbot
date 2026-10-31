@@ -8,6 +8,7 @@ RUN pip install -r requirements.txt
 
 COPY helpbot ./helpbot
 COPY main.py .
+COPY config ./config
 RUN useradd --create-home app && chown -R app /app
 USER app
 

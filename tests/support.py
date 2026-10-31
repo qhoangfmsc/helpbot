@@ -61,6 +61,7 @@ def run_main(monkeypatch, tmp_path, store, articles, **env) -> int:
     monkeypatch.setattr(main, "load_dotenv", lambda: None)
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     monkeypatch.setenv("ARTICLES_DIR", str(tmp_path / "out"))
+    monkeypatch.setenv("ARTICLE_IDS_FILE", "")  # all articles, unless a test sets a file
     for key, value in env.items():
         monkeypatch.setenv(key, value)
     monkeypatch.setattr(main, "fetch_articles", lambda base_url: iter(articles))

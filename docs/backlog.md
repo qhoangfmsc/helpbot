@@ -26,6 +26,8 @@ Rule 0: core flow first. Everything here is deliberately **after** the flow work
 | B20 | Brief short overlap window during updates (old and new version both searchable) | upload-then-delete is the safe order | none needed | seconds of duplicate context | accepted |
 | B21 | Heading level jumps (H1 -> H3) in 197 articles | spec says preserve headings | cleaner outline | would alter authored structure | accepted |
 
+| B22 | Full 417-article mode is only exercised by hand | tests run on the 40 samples (Gemini limits) | catches problems that only show at scale | 417 uploads ~16 min; it already found the base64-image bug | accepted (one full run done) |
+
 ## Problems found and how they were handled
 | Problem | Handling |
 |---|---|

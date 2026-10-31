@@ -9,10 +9,13 @@ from dotenv import load_dotenv
 from google import genai
 
 from helpbot.pipeline import run_job
+from helpbot.scrape import load_ids, select_ids
 from helpbot.store import DEFAULT_STORE_NAME, FileSearchStore
 from helpbot.zendesk import DEFAULT_BASE_URL, fetch_articles
 
 log = logging.getLogger("helpbot")
+
+DEFAULT_IDS_FILE = "config/article_ids.txt"  # the 40 articles the job keeps in sync; ARTICLE_IDS_FILE="" means all
 
 
 def main() -> int:
@@ -27,6 +30,15 @@ def main() -> int:
     limit = int(os.environ["ARTICLE_LIMIT"]) if os.environ.get("ARTICLE_LIMIT") else None
 
     articles = list(fetch_articles(os.environ.get("HELP_CENTER_URL", DEFAULT_BASE_URL)))
+    ids_file = os.environ.get("ARTICLE_IDS_FILE", DEFAULT_IDS_FILE)
+    if ids_file:
+        try:
+            articles, missing = select_ids(articles, load_ids(Path(ids_file)))
+        except (OSError, ValueError) as error:
+            log.error("cannot use ARTICLE_IDS_FILE=%s: %s", ids_file, error)
+            return 2
+        if missing:
+            log.warning("%s listed article ids are not on the site any more: %s", len(missing), ", ".join(missing))
     store = FileSearchStore.open(genai.Client(api_key=api_key), os.environ.get("GEMINI_FILE_SEARCH_STORE", DEFAULT_STORE_NAME))
     summary = run_job(
         articles,
