@@ -34,6 +34,8 @@ Append-only log of decisions, confirmed facts and what was done per step. Newest
 | D27 | One folder `articles/` (committed job output) replaces `data/` + `samples/`; no "all articles" mode | User instruction: only the 40 articles matter |
 | D28 | No answer guardrails (eval script / retry / topic gate): the task only needs the sample question answered with cited URLs; keep the assistant = verbatim prompt + File Search | User instruction: avoid workaround-style additions |
 | D29 | User-facing scripts: sync_docs, check_store, chat; README is a 5-minute user guide | User instruction |
+| D30 | Ask the user before any real Gemini generate call (free tier: 20 requests/model/day); verify failure handling offline with constructed errors | User instruction 2026-11-01 |
+| D31 | One place classifies failures (`helpbot/problems.py`): specific message each, exit codes 1/2/3, every request has a timeout, job time limit `JOB_MAX_MINUTES`, bounded retries, early stop on daily-quota / bad-key | User instruction: cover timeouts and exhausted quota, never hang |
 | D17 | Commits need an explicit request AND a second confirmation after I show files + messages | User instruction (2026-10-31) |
 | D13 | Plan each step before doing it; settle open items from the previous step first | User instruction |
 
@@ -160,3 +162,10 @@ Append-only log of decisions, confirmed facts and what was done per step. Newest
 - Latency probe (single measurements): imports 0.2 s, store lookup 0.7 s, `gemini-3.5-flash` 13.7 s (575 thinking tokens), lite 5.5 s; 429 RESOURCE_EXHAUSTED on the free tier appeared during the probe; `thinking_budget=0` dropped the `Article URL:` line. `chat.py` now prints a status line, retry reasons (stderr) and the answer time.
 - New `scripts/sync_docs.py` (runs `main.main()`), `scripts/check_store.py` (read-only comparison of store vs `articles/`, `--list`, exit 1 when different) with 4 offline tests (102 passed + 1 xfail). All three run from any directory (verified from /tmp): `check_store` 40/40 in sync, `sync_docs` skipped=40, `chat` correct answer with one `Article URL:` line (24.8 s that time).
 - README rewritten as a 51-line guide: scripts table, 5-minute quick start, how it works (chunking explained), evidence section (2 TODOs: Actions run link, screenshot), limits.
+
+### Step 8 - timeouts, quota and specific errors (2026-11-01)
+- Facts found offline (SDK source): the client's default HTTP timeout is `None` (can wait forever) and timeout/connect failures surface as raw `httpx` exceptions. The earlier real probe that hung >120 s was stopped at the user's request (D30).
+- Quota fact (earlier 429 body): `GenerateRequestsPerDayPerProjectPerModel-FreeTier`, 20 per model per day; it had reset by the next day.
+- Built `helpbot/problems.py` (classify + explain + exit codes), `make_client` with a 90 s request timeout (`GEMINI_TIMEOUT_SECONDS`), retries only for rate limit/5xx/timeout/network and never for daily quota or bad key, early stop of the upload run on those two, `JOB_MAX_MINUTES` (default 30), `main.py` exit codes 0/1/2/3, `chat.py` rewritten (per-kind handling, 150 s hard limit per question, bounded fallbacks), `check_store.py` messages and exit codes.
+- Tests: 105 -> 141 passed (+1 xfail), all offline with constructed exceptions and fake clients: one test per failure kind, bounded retry counts, quota stops the run after one failure, time limit, exit codes, missing key.
+- Not verified against the real API (by design, see D30): the exact text Gemini returns for each error; the classification relies on the SDK's exception types and the quota id seen earlier.

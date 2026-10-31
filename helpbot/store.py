@@ -1,14 +1,16 @@
 """Gemini File Search store: the only module that talks to the Gemini API."""
 
 import logging
+import os
 import time
 from pathlib import Path
 from typing import Callable, TypeVar
 
 from google import genai
-from google.genai import errors, types
+from google.genai import types
 
 from helpbot.chunking import MAX_TOKENS_PER_CHUNK, OVERLAP_TOKENS
+from helpbot.problems import explain, is_transient
 from helpbot.sync import RemoteDoc
 
 log = logging.getLogger(__name__)
@@ -21,20 +23,32 @@ UPLOAD_TIMEOUT_SECONDS = 300
 POLL_SECONDS = 2.0
 
 
-def _is_transient(error: Exception) -> bool:
-    return isinstance(error, errors.ServerError) or (isinstance(error, errors.ClientError) and error.code == 429)
+REQUEST_TIMEOUT_SECONDS = 90.0
+
+
+def http_options() -> types.HttpOptions:
+    """The SDK's default is NO timeout (a stalled connection would hang forever), so one is always set."""
+    seconds = float(os.environ.get("GEMINI_TIMEOUT_SECONDS", REQUEST_TIMEOUT_SECONDS))
+    return types.HttpOptions(timeout=int(seconds * 1000))  # milliseconds
+
+
+def make_client(api_key: str) -> genai.Client:
+    return genai.Client(api_key=api_key, http_options=http_options())
 
 
 def with_retries(call: Callable[[], T], attempts: int = 5, base_delay: float = 2.0, sleep=time.sleep) -> T:
-    """Retry 5xx / 429 with exponential backoff (2, 4, 8, 16 s); anything else is raised immediately."""
+    """Retry rate limits, 5xx, timeouts and network blips with exponential backoff (2, 4, 8, 16 s).
+
+    Everything else (daily quota used up, bad key, other 4xx, unknown) is raised at once: waiting cannot fix it.
+    """
     for attempt in range(1, attempts + 1):
         try:
             return call()
         except Exception as error:
-            if attempt == attempts or not _is_transient(error):
+            if attempt == attempts or not is_transient(error):
                 raise
             delay = min(base_delay * 2 ** (attempt - 1), 60.0)
-            log.warning("transient API error (%s), retry %s/%s in %.0fs", error, attempt, attempts - 1, delay)
+            log.warning("%s Retry %s/%s in %.0fs.", explain(error), attempt, attempts - 1, delay)
             sleep(delay)
     raise AssertionError("unreachable")
 

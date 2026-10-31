@@ -29,6 +29,7 @@ The take-home spec lives outside the repo; its path and the requirement checklis
 12. **Stateless sync.** Change detection state lives in File Search document metadata (`article_id`, `content_hash`), not in a DB or local disk (cron filesystems are ephemeral). Verify attribute support in the current API first.
 13. **Log every step.** Record decisions (with why), confirmed API facts and what was done (with evidence) in `NOTES.md`, then give the user a short summary at the end of each step: what was done, decisions, evidence, what is next, proposed commit.
 14. **Plan first, then do.** Before each step, present a short plan (goal, who does what, risks, open decisions), settle any open items left from the previous step, and wait for the user's go-ahead before coding.
+15. **Ask before calling the Gemini generate API.** The free tier allows only ~20 requests per model per day (`GenerateRequestsPerDayPerProjectPerModel-FreeTier`). Never run chat/eval/probe scripts that generate text on my own: prefer offline tests and fakes, and ask the user first for any real-API check (uploads and store listing are not generate calls, but still ask before big runs).
 
 ## Layout
 

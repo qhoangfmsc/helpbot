@@ -11,11 +11,10 @@ import tempfile
 from pathlib import Path
 
 from dotenv import load_dotenv
-from google import genai
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from helpbot.pipeline import run_job  # noqa: E402
-from helpbot.store import FileSearchStore  # noqa: E402
+from helpbot.store import FileSearchStore, make_client  # noqa: E402
 from helpbot.zendesk import Article, fetch_articles  # noqa: E402
 
 STORE_NAME = "helpbot-demo"
@@ -23,7 +22,7 @@ STORE_NAME = "helpbot-demo"
 
 def main() -> int:
     load_dotenv()
-    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+    client = make_client(os.environ["GEMINI_API_KEY"])
     store = FileSearchStore.open(client, STORE_NAME)
     live = sorted(fetch_articles(), key=lambda a: (a.updated_at, int(a.id)), reverse=True)
     newest = live[0]

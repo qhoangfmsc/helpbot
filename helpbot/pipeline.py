@@ -1,12 +1,15 @@
 """Scrape -> delta -> upload: the daily job's logic, independent of how it is configured."""
 
 import logging
+import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
 
 from helpbot.chunking import estimate_chunks
+from helpbot.problems import FATAL_FOR_RUN, classify, explain
 from helpbot.scrape import latest, write_articles
 from helpbot.sync import Delta, RemoteDoc, content_hash, plan_delta
 from helpbot.zendesk import Article
@@ -60,18 +63,26 @@ def load_local(files: dict[str, Path]) -> dict[str, LocalDoc]:
     return local
 
 
-def run_job(articles: list[Article], out_dir: Path, store: Store, workers: int = 4, limit: int | None = None) -> Summary:
+def run_job(
+    articles: list[Article], out_dir: Path, store: Store, workers: int = 4, limit: int | None = None, max_seconds: float | None = None
+) -> Summary:
     """One daily run on already-fetched articles: write Markdown, compare with the store, upload only the delta.
 
     `limit` keeps only the N most recently updated articles (partial run: nothing is ever deleted then).
     """
     selected = latest(articles, limit) if limit else articles
     files = write_articles(selected, out_dir)
-    return sync_store(load_local(files), store, workers=workers, allow_delete=limit is None)
+    return sync_store(load_local(files), store, workers=workers, allow_delete=limit is None, max_seconds=max_seconds)
 
 
-def sync_store(local: dict[str, LocalDoc], store: Store, workers: int = 4, allow_delete: bool = True) -> Summary:
+def sync_store(
+    local: dict[str, LocalDoc], store: Store, workers: int = 4, allow_delete: bool = True, max_seconds: float | None = None
+) -> Summary:
+    """`max_seconds` is a time limit for the whole run: no new upload starts after it, the next run continues."""
     summary = Summary()
+    stop = threading.Event()  # set when every further upload would fail the same way (daily quota, bad key) or time is up
+    reasons: list[str] = []
+    deadline = time.monotonic() + max_seconds if max_seconds else None
     remote = store.list_documents()
     delta = plan_delta({i: d.hash for i, d in local.items()}, remote)
     summary.skipped = len(delta.skipped)
@@ -81,11 +92,24 @@ def sync_store(local: dict[str, LocalDoc], store: Store, workers: int = 4, allow
     )
 
     def upload_one(article_id: str) -> bool:
+        if stop.is_set():
+            return False
+        if deadline and time.monotonic() > deadline:
+            stop.set()
+            reasons.append(f"time limit of {max_seconds / 60:.0f} min reached; the remaining uploads were skipped and the next run continues")
+            return False
         doc = local[article_id]
         try:
             store.upload(doc.path, article_id, doc.hash)
-        except Exception:
-            log.exception("upload failed article_id=%s", article_id)
+        except Exception as error:
+            kind = classify(error)
+            if kind == "unknown":
+                log.exception("upload failed article_id=%s: %s", article_id, explain(error))
+            else:
+                log.error("upload failed article_id=%s: %s", article_id, explain(error))
+            if kind in FATAL_FOR_RUN:
+                stop.set()
+                reasons.append(explain(error))
             return False
         log.info("uploaded article_id=%s chunks_estimated=%s", article_id, doc.chunks)
         return True
@@ -93,6 +117,9 @@ def sync_store(local: dict[str, LocalDoc], store: Store, workers: int = 4, allow
     todo = delta.added + delta.updated
     with ThreadPoolExecutor(max_workers=max(workers, 1)) as pool:
         results = dict(zip(todo, pool.map(upload_one, todo)))
+    for reason in dict.fromkeys(reasons):  # same reason from several threads: report once
+        summary.problems.append(reason)
+        log.error("stopped uploading: %s", reason)
     added, updated = set(delta.added), set(delta.updated)
     for article_id, uploaded in results.items():  # single-threaded from here on: counters are not thread-safe
         if not uploaded:

@@ -25,7 +25,8 @@ pytest -q                              # offline tests, grouped by grading area 
 docker build -t helpbot . && docker run --rm -e GEMINI_API_KEY helpbot    # one run, exit 0
 ```
 Last line of a sync: `added=… updated=… skipped=… deleted=… failed=… files=… chunks_estimated=… store_documents=…`.
-The store (`helpbot-docs`) is created on the first run. Free-tier limits can slow or delay answers (the scripts retry).
+The store (`helpbot-docs`) is created on the first run. The free tier allows only ~20 chat requests per model per day; when it is used up (or on a
+timeout, a bad key, no network...) the scripts print a specific message. Exit codes: 0 ok, 1 some uploads failed, 2 config/key problem, 3 API/network problem.
 
 ## How it works
 

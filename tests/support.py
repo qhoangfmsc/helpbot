@@ -67,6 +67,6 @@ def run_main(monkeypatch, tmp_path, store, articles, **env) -> int:
     for key, value in env.items():
         monkeypatch.setenv(key, value)
     monkeypatch.setattr(main, "fetch_articles", lambda base_url: iter(articles))
-    monkeypatch.setattr(main.genai, "Client", lambda api_key: object())
+    monkeypatch.setattr(main, "make_client", lambda api_key: object())
     monkeypatch.setattr(main.FileSearchStore, "open", lambda client, name: store)
     return main.main()

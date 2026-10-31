@@ -72,8 +72,8 @@ def test_missing_ids_file_exits_with_code_2_and_uploads_nothing(monkeypatch, tmp
     assert store.calls == []
 
 
-def test_a_list_that_matches_nothing_fails_instead_of_wiping_the_store(monkeypatch, tmp_path):
+def test_a_list_that_matches_nothing_fails_instead_of_wiping_the_store(monkeypatch, tmp_path, caplog):
     store = FakeStore([RemoteDoc("docs/1", "1", "h"), RemoteDoc("docs/2", "2", "h")])
-    with pytest.raises(ValueError, match="no articles"):
-        run_main(monkeypatch, tmp_path, store, [make_article(1)], ARTICLE_IDS_FILE=ids_file(tmp_path, "999"))
+    code = run_main(monkeypatch, tmp_path, store, [make_article(1)], ARTICLE_IDS_FILE=ids_file(tmp_path, "999"))
+    assert code == 2 and "no articles to write" in caplog.text
     assert len(store.docs) == 2

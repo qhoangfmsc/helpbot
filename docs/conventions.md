@@ -26,15 +26,30 @@ Written so each choice can be explained later. "Why" is the point of this file; 
   (`Store` is a `Protocol` only because tests substitute it). Comments say *why*, not what. Lines <= ~120 chars.
 - Standard `logging`, never `print` inside `helpbot/` (scripts may print: they are CLIs). *Why:* the job's log is a deliverable.
 
-## 4. Errors, retries, exit codes
-- **Systemic problem -> fail the whole job loudly:** missing key (exit 2), empty fetch (`write_articles` raises), mass deletion
-  (> 50% of the store, refused and reported as a problem -> exit 1). *Why:* a broken fetch must never look like "everything was deleted".
-- **Per-item problem -> keep going:** one failed upload is logged with traceback, counted in `failed=`, the others continue,
-  exit code 1 at the end. *Why:* one bad article must not block 400 good ones; stateless sync retries it next run.
-- **Retries only for transient errors:** 5xx and 429, exponential backoff 2/4/8/16 s (Gemini), `urllib3.Retry` (Zendesk, `Retry-After`
-  capped at 60 s). 4xx is never retried. *Why:* observed real 503 "high demand"; an uncapped `Retry-After` could hang a cron run.
-- **Order of operations for updates:** upload the new version, then delete the old. A crash leaves a duplicate that the next run
-  removes (`plan_delta` -> `duplicates`). *Why:* never leave an article without a searchable document.
+## 4. Errors, timeouts, retries, exit codes
+Rule: **nothing may hang and nothing may fail silently**. All kinds of failure are classified in one place (`helpbot/problems.py`, `classify` + `explain`) and each
+has its own message that says what happened and what to do. *Why:* the daily job and the scripts run unattended; a log line like "429" is not actionable.
+
+| Case | Message says | Handling |
+|---|---|---|
+| Gemini daily free quota used up (429 `PerDay`) | quota used up, resets daily; wait / other model / other key | not retried; the run stops early (every upload would fail the same way); `chat.py` goes to the next model |
+| Per-minute rate limit (429) | wait a minute or lower `UPLOAD_WORKERS` | retried with backoff 2/4/8/16 s |
+| Bad/expired key (400 "API key", 401, 403) | key rejected, check `GEMINI_API_KEY` | not retried; run stops; exit 2 in the scripts |
+| Model/store not found (404) | model may be retired, check `GEMINI_MODEL`/store name | not retried; `chat.py` tries the next model |
+| Gemini 5xx | overloaded/down, run again later | retried, then reported |
+| Request timeout (no answer within `GEMINI_TIMEOUT_SECONDS`, default 90) | timed out, check network / raise the timeout | retried a bounded number of times; one file failing does not stop the others |
+| Indexing slower than 300 s | did not finish indexing; next run retries | file counted as failed |
+| Network down / DNS | cannot reach the server | retried, then reported |
+| Help Center timeout / 404 / 5xx after retries | names `HELP_CENTER_URL` for 404 | job aborts before touching the store, exit 3 |
+| Bad input (missing id list, no articles, empty fetch) | the exact problem | exit 2, store untouched |
+| Anything unknown | `Unexpected <Type>: ...` + traceback | exit 3 |
+
+- **Hard limits against hanging:** every HTTP request has a timeout (the SDK default is *no timeout*, so `make_client` always sets one); the whole job stops starting
+  uploads after `JOB_MAX_MINUTES` (default 30, below the workflow's 45-minute cut-off); one `chat.py` question gives up after 150 s; retries are always bounded.
+- **Exit codes:** 0 ok | 1 some uploads failed (the next run retries them) | 2 configuration/input problem | 3 API or network problem.
+- **Per-item problem -> keep going:** one failed upload is logged with its reason, counted in `failed=`, the others continue.
+- **Systemic problem -> fail loudly:** empty fetch, mass deletion (> 50% of the store) is refused and reported as a problem.
+- **Order of operations for updates:** upload the new version, then delete the old; a crash leaves a duplicate that the next run removes.
 
 ## 5. Configuration
 - Environment variables only, read in `main.py` (and dev scripts), every one listed in `.env.sample` (a test enforces this).

@@ -1,7 +1,8 @@
 """Re-check what the store holds against the Markdown files in articles/ (read-only, no uploads).
 
 Usage: python scripts/check_store.py [--list]     --list prints every article and its status
-Exit code 0 when the store matches articles/, 1 when something is missing, outdated or extra (fix: python scripts/sync_docs.py).
+Exit code 0 when the store matches articles/, 1 when something is missing, outdated or extra (fix: python scripts/sync_docs.py),
+2 for a missing/invalid key, 3 when Gemini is unreachable, timed out or the quota is used up (each prints its own message).
 """
 
 import os
@@ -9,12 +10,12 @@ import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
-from google import genai
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from helpbot.pipeline import LocalDoc, load_local  # noqa: E402
-from helpbot.store import DEFAULT_STORE_NAME, FileSearchStore  # noqa: E402
+from helpbot.problems import EXIT_API, EXIT_CONFIG, classify, explain  # noqa: E402
+from helpbot.store import DEFAULT_STORE_NAME, FileSearchStore, make_client  # noqa: E402
 from helpbot.sync import RemoteDoc, plan_delta  # noqa: E402
 
 
@@ -50,11 +51,22 @@ def format_report(report: dict[str, list[str]], local: dict[str, LocalDoc], list
 
 def main() -> int:
     load_dotenv(ROOT / ".env")
-    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
-    store = FileSearchStore.open(client, os.environ.get("GEMINI_FILE_SEARCH_STORE", DEFAULT_STORE_NAME))
-    info = client.file_search_stores.get(name=store.name)
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        print("error: GEMINI_API_KEY is not set (copy .env.sample to .env and fill it in)", file=sys.stderr)
+        return EXIT_CONFIG
     files = {p.name.split("-")[0]: p for p in sorted((ROOT / os.environ.get("ARTICLES_DIR", "articles")).glob("*.md"))}
-    local, remote = load_local(files), store.list_documents()
+    if not files:
+        print("error: no Markdown files in articles/ (run `python scripts/sync_docs.py` first)", file=sys.stderr)
+        return EXIT_CONFIG
+    try:
+        client = make_client(api_key)
+        store = FileSearchStore.open(client, os.environ.get("GEMINI_FILE_SEARCH_STORE", DEFAULT_STORE_NAME))
+        info = client.file_search_stores.get(name=store.name)
+        local, remote = load_local(files), store.list_documents()
+    except Exception as error:
+        print(f"error: could not read the store. {explain(error)}", file=sys.stderr)
+        return EXIT_CONFIG if classify(error) == "auth" else EXIT_API
 
     print(f"store: {info.display_name} ({store.name}) | documents in store: {info.active_documents_count} | size: {(info.size_bytes or 0) / 1024:.0f} KB")
     print(f"local files: {len(local)} in articles/")
