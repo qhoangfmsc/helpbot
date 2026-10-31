@@ -38,7 +38,7 @@ Append-only log of decisions, confirmed facts and what was done per step. Newest
 | D31 | One place classifies failures (`helpbot/problems.py`): specific message each, exit codes 1/2/3, every request has a timeout, job time limit `JOB_MAX_MINUTES`, bounded retries, early stop on daily-quota / bad-key | User instruction: cover timeouts and exhausted quota, never hang |
 | D32 | Explicit one-off override `ALLOW_MASS_DELETE=1` for the 50% deletion guard (not for partial runs, not set in the workflow); the refusal message and `check_store` point to it | The guard blocked cleaning a store polluted by an old-code workflow run; user chose this over deleting the store |
 | D33 | One environment variable (`GEMINI_API_KEY`); all other settings in validated `config/settings.toml`; one-off actions as CLI flags (`--allow-mass-delete`, `--limit N`) replacing `ALLOW_MASS_DELETE` / `ARTICLE_LIMIT` env vars. `.env.sample` stays (the task requires it) with only the empty key | User instruction 2026-11-01; fear of committing a key |
-| D34 | Daily sync at 08:00 Vietnam time = cron `0 1 * * *` (01:00 UTC); GitHub cron is UTC and may start a few minutes late | User instruction 2026-11-01 (was 03:17 UTC) |
+| D34 | Daily sync at 04:00 Vietnam time = cron `0 21 * * *` (21:00 UTC the day before); GitHub cron is UTC and may start a few minutes late. 04:00 is outside business hours, so a sync never competes with customers or editors reading/changing articles | User instruction 2026-11-01 (was 03:17 UTC, then 01:00 UTC = 08:00 VN) |
 | D17 | Commits need an explicit request AND a second confirmation after I show files + messages | User instruction (2026-10-31) |
 | D13 | Plan each step before doing it; settle open items from the previous step first | User instruction |
 
@@ -192,3 +192,4 @@ Append-only log of decisions, confirmed facts and what was done per step. Newest
 - Not yet observed: a run triggered by the schedule itself (event `schedule`, 03:17 UTC). The cron entry exists and is tested for "exactly once a day"; check the Actions tab tomorrow.
 - README has no TODO left; the xfail reminder test became a normal test.
 - Schedule changed to 08:00 Vietnam time (cron `0 1 * * *`); the "exactly once a day" test still passes. Run #3 was a manual trigger; the first run by the schedule is expected the next morning around 08:00 (UTC+7).
+- Schedule moved again to 04:00 Vietnam time (cron `0 21 * * *`, 21:00 UTC), so it runs outside the customers' working hours. The "exactly once a day" hygiene test still passes; the first scheduled run is expected around 04:00 (UTC+7) after the change reaches `main`.
