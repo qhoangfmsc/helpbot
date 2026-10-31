@@ -3,7 +3,7 @@ name: daily-sync
 # Once a day: build the Docker image and run the job (scrape -> delta -> upload). Logs are public when the repo is public.
 on:
   schedule:
-    - cron: "17 3 * * *"   # 03:17 UTC every day
+    - cron: "0 1 * * *"    # 01:00 UTC every day = 08:00 in Vietnam (UTC+7); GitHub may start it a few minutes late
   workflow_dispatch:        # manual run button
 
 concurrency:
