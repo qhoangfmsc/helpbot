@@ -21,7 +21,7 @@ The take-home spec lives outside the repo; its path and the requirement checklis
 4. **Job contract.** `main.py` runs once and exits 0 on success, non-zero on failure. Idempotent. State is committed only after the upload is confirmed. Final log line: `added=X updated=Y skipped=Z deleted=D failed=F files=N chunks_estimated=M store_documents=S` (chunk counts are not exposed by the API, so they are estimated and labelled).
 5. **Do not trust memory for APIs.** Check current Gemini API docs before writing API calls; record what was confirmed in `NOTES.md` (see skill `api-docs-check`).
 6. **Evidence before "done".** Run it and show output / screenshot. No "should work".
-7. **Secrets and names.** Keys only via env / `.env`; keep `.env.sample` current. No "optisigns"/"optibot" in repo name, description, commit messages or code identifiers (the README may name the scraped site where unavoidable).
+7. **Secrets and names.** The only secret is `GEMINI_API_KEY`, only via `.env` (git-ignored); `.env.sample` holds just the empty key (the task asks for it). Every other setting lives in `config/settings.toml`; one-off actions are CLI flags. No "optisigns"/"optibot" in repo name, description, commit messages or code identifiers (the README may name the scraped site where unavoidable).
 8. **Tests are pure.** No network in unit tests; use fixtures (HTML -> Markdown, delta classification, prompt verbatim, hashing).
 9. **Commits: only when the user asks, and confirm before committing; push only when the user explicitly asks.** Granularity: **one commit per finished step/feature** (code + its tests + the docs/notes it changes), not many tiny commits; split only if a step mixes unrelated concerns. Format: **Conventional Commits** `type(scope): subject` (types: feat, fix, docs, test, chore, refactor, ci, build; imperative, <= 72 chars, e.g. `feat(scrape): convert help center articles to markdown`), plus an optional body that says what and why. When asked, first show the exact files and message and wait for an explicit second confirmation. Only then commit, with the user's own git identity as the only author: **no `Co-Authored-By` trailer and no tool attribution lines**. Stage by explicit paths, never `git add -A`.
 10. **README <= 1 page** (setup, run locally, daily-job log link, screenshot). Count lines before finishing.
@@ -38,7 +38,7 @@ main.py  Dockerfile  README.md  .env.sample
 helpbot/         # package: zendesk fetch, markdown conversion, scrape, (later) vector store, sync
 tests/           # pytest, fixtures in tests/fixtures
 prompts/         # system_prompt.txt
-config/          # article_ids.txt: the 40 articles the job syncs (includes the YouTube article)
+config/          # settings.toml (all non-secret settings), article_ids.txt (the 40 articles the job syncs, includes the YouTube one)
 articles/        # the 40 Markdown files: job output, committed so reviewers can read them
 data/            # git-ignored scratch space for experiments
 scripts/         # user-facing: sync_docs.py, check_store.py, chat.py (documented in README); dev: check_markdown, verify_articles, demo_delta

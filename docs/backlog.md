@@ -13,7 +13,7 @@ Rule 0: core flow first. Everything here is deliberately **after** the flow work
 | B7 | Strip image URLs before indexing | images are kept per spec | fewer noisy tokens per chunk | images are part of "preserve"; needs a second representation | later |
 | B8 | Zendesk incremental API instead of full re-scrape | spec says re-scrape and hash | fewer requests | extra moving part; full scrape is 5 requests | accepted |
 | B9 | Other locales / languages | only `en-us` needed | broader coverage | more articles, more limit pressure | accepted |
-| B10 | Adaptive upload rate (429 handling) and tuning `UPLOAD_WORKERS` | 4 workers worked (40 files in ~1.5 min) | faster, safer on tight limits | complexity | later |
+| B10 | Adaptive upload rate (429 handling) and tuning `upload_workers` | 4 workers worked (40 files in ~1.5 min) | faster, safer on tight limits | complexity | later |
 | B11 | Model name drift (`gemini-2.5-*` already 404) | `chat.py` has fallbacks | resilience | config surface | later |
 | B12 | AI Studio cannot attach a File Search store (Tools panel has no such option) | needs the recruiter's answer | proper "set up in AI Studio" evidence | none if they accept the API/CLI evidence | **open question** |
 | B13 | CI workflow running pytest | core first | reviewers see a green check | ~10 lines of YAML | todo |

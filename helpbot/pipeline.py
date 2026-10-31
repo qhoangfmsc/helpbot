@@ -64,7 +64,13 @@ def load_local(files: dict[str, Path]) -> dict[str, LocalDoc]:
 
 
 def run_job(
-    articles: list[Article], out_dir: Path, store: Store, workers: int = 4, limit: int | None = None, max_seconds: float | None = None
+    articles: list[Article],
+    out_dir: Path,
+    store: Store,
+    workers: int = 4,
+    limit: int | None = None,
+    max_seconds: float | None = None,
+    allow_mass_delete: bool = False,
 ) -> Summary:
     """One daily run on already-fetched articles: write Markdown, compare with the store, upload only the delta.
 
@@ -72,11 +78,18 @@ def run_job(
     """
     selected = latest(articles, limit) if limit else articles
     files = write_articles(selected, out_dir)
-    return sync_store(load_local(files), store, workers=workers, allow_delete=limit is None, max_seconds=max_seconds)
+    return sync_store(
+        load_local(files), store, workers=workers, allow_delete=limit is None, max_seconds=max_seconds, allow_mass_delete=allow_mass_delete
+    )
 
 
 def sync_store(
-    local: dict[str, LocalDoc], store: Store, workers: int = 4, allow_delete: bool = True, max_seconds: float | None = None
+    local: dict[str, LocalDoc],
+    store: Store,
+    workers: int = 4,
+    allow_delete: bool = True,
+    max_seconds: float | None = None,
+    allow_mass_delete: bool = False,
 ) -> Summary:
     """`max_seconds` is a time limit for the whole run: no new upload starts after it, the next run continues."""
     summary = Summary()
@@ -134,7 +147,7 @@ def sync_store(
 
     for duplicate in delta.duplicates:
         _delete(store, duplicate, summary)
-    _delete_orphans(delta, len(remote), store, summary, allow_delete)
+    _delete_orphans(delta, len(remote), store, summary, allow_delete, allow_mass_delete)
     summary.store_documents = len(store.list_documents())
     return summary
 
@@ -147,15 +160,22 @@ def _delete(store: Store, doc: RemoteDoc, summary: Summary) -> None:
         log.exception("delete failed document=%s (a duplicate is harmless, the next run removes it)", doc.name)
 
 
-def _delete_orphans(delta: Delta, remote_count: int, store: Store, summary: Summary, allow_delete: bool) -> None:
+def _delete_orphans(
+    delta: Delta, remote_count: int, store: Store, summary: Summary, allow_delete: bool, allow_mass_delete: bool = False
+) -> None:
     if not delta.orphans:
         return
     if not allow_delete:
         log.warning("not deleting %s documents of articles missing from this run (partial run)", len(delta.orphans))
         return
     if len(delta.orphans) > MAX_ORPHAN_FRACTION * remote_count:
-        summary.problems.append(f"refused to delete {len(delta.orphans)} of {remote_count} documents (fetch looks incomplete)")
-        log.error(summary.problems[-1])
-        return
+        if not allow_mass_delete:
+            summary.problems.append(
+                f"refused to delete {len(delta.orphans)} of {remote_count} documents (the fetch may be incomplete). "
+                "If you really shrank the article list, run once: python scripts/sync_docs.py --allow-mass-delete"
+            )
+            log.error(summary.problems[-1])
+            return
+        log.warning("--allow-mass-delete is on: deleting %s of %s documents", len(delta.orphans), remote_count)
     for orphan in delta.orphans:
         _delete(store, orphan, summary)

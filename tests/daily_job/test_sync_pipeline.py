@@ -78,3 +78,25 @@ def test_summary_line_has_the_counters_the_job_must_log(tmp_path):
     line = sync_store(make_local(tmp_path, a="a"), FakeStore()).line()
     for key in ("added=1", "updated=0", "skipped=0", "deleted=0", "failed=0", "files=1", "chunks_estimated=1", "store_documents=1"):
         assert key in line
+
+
+def test_mass_deletion_goes_ahead_only_with_the_explicit_override(tmp_path):
+    store = FakeStore()
+    sync_store(make_local(tmp_path, a="a", b="b", c="c", d="d"), store)
+    summary = sync_store(make_local(tmp_path, a="a"), store, allow_mass_delete=True)
+    assert summary.deleted == 3 and summary.ok
+    assert [d.article_id for d in store.docs] == ["a"]
+
+
+def test_the_refusal_message_tells_the_user_how_to_proceed(tmp_path):
+    store = FakeStore()
+    sync_store(make_local(tmp_path, a="a", b="b", c="c", d="d"), store)
+    summary = sync_store(make_local(tmp_path, a="a"), store)
+    assert "python scripts/sync_docs.py --allow-mass-delete" in summary.problems[0]
+
+
+def test_the_override_never_deletes_in_a_partial_run(tmp_path):
+    store = FakeStore()
+    sync_store(make_local(tmp_path, a="a", b="b", c="c", d="d"), store)
+    summary = sync_store(make_local(tmp_path, a="a"), store, allow_delete=False, allow_mass_delete=True)
+    assert summary.deleted == 0 and len(store.docs) == 4

@@ -3,7 +3,7 @@
 Usage:
   python scripts/chat.py                          # interactive, empty line or Ctrl-D to quit
   python scripts/chat.py "How do I add a YouTube video?"   # one question
-Env: GEMINI_API_KEY, GEMINI_FILE_SEARCH_STORE (default helpbot-docs), GEMINI_MODEL (default gemini-3.5-flash).
+Needs GEMINI_API_KEY in .env; store and model come from config/settings.toml.
 Exit codes: 0 ok | 2 missing/invalid key | 3 Gemini unreachable, quota used up or timed out (each case prints its own message).
 """
 
@@ -19,13 +19,14 @@ from google.genai import types
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-from helpbot.problems import EXIT_API, EXIT_CONFIG, classify, explain, is_transient  # noqa: E402
-from helpbot.store import DEFAULT_STORE_NAME, FileSearchStore, make_client  # noqa: E402
+from helpbot.problems import EXIT_API, EXIT_CONFIG, classify, explain, is_transient, summarize  # noqa: E402
+from helpbot.settings import Settings, load_settings  # noqa: E402
+from helpbot.store import FileSearchStore, make_client  # noqa: E402
 
 SYSTEM_PROMPT = (ROOT / "prompts" / "system_prompt.txt").read_text(encoding="utf-8")
 # gemini-3.5-flash follows "cite Article URL: lines"; the lite models do not (measured, see docs/backlog.md B1)
-DEFAULT_MODEL = "gemini-3.5-flash"
-FALLBACK_MODELS = ("gemini-3-flash-preview", "gemini-flash-lite-latest")
+DEFAULT_MODEL = Settings().chat_model  # the real values are read from config/settings.toml
+FALLBACK_MODELS = Settings().chat_fallback_models
 ATTEMPTS_PER_MODEL = 3
 ANSWER_MAX_SECONDS = 150  # hard limit for one question, whatever the retries and fallbacks add up to
 ARTICLE_URL_LINE = re.compile(r"^.*Article URL:.*$", re.M)
@@ -41,7 +42,7 @@ def note(text: str) -> None:
     print(f"    ({text})", file=sys.stderr)
 
 
-def ask(client: genai.Client, store_name: str, question: str, model: str):
+def ask(client: genai.Client, store_name: str, question: str, model: str, fallbacks: tuple[str, ...] = FALLBACK_MODELS):
     """Preferred model first, then the fallbacks. What happens on a failure depends on its kind (helpbot.problems):
     bad key -> stop; overload/rate limit/timeout/network -> wait and retry; quota used up/model gone -> next model."""
     config = types.GenerateContentConfig(
@@ -50,7 +51,7 @@ def ask(client: genai.Client, store_name: str, question: str, model: str):
     )
     deadline = time.monotonic() + ANSWER_MAX_SECONDS
     last: Exception | None = None
-    for candidate in (model, *FALLBACK_MODELS):
+    for candidate in (model, *fallbacks):
         for attempt in range(1, ATTEMPTS_PER_MODEL + 1):
             if time.monotonic() > deadline:
                 raise ChatFailed(f"gave up after {ANSWER_MAX_SECONDS}s. Last problem: {explain(last) if last else 'none'}")
@@ -62,10 +63,10 @@ def ask(client: genai.Client, store_name: str, question: str, model: str):
                     raise ChatFailed(explain(error), EXIT_CONFIG) from error
                 if is_transient(error) and attempt < ATTEMPTS_PER_MODEL:
                     wait = 3 * attempt
-                    note(f"{candidate}: {explain(error)} Retrying in {wait}s")
+                    note(f"{candidate}: {summarize(error)}. Retrying in {wait}s")
                     time.sleep(wait)
                     continue
-                note(f"{candidate}: {explain(error)} Trying the next model")
+                note(f"{candidate}: {summarize(error)}. Trying the next model")
                 break
     raise ChatFailed(f"every model failed. Last problem: {explain(last)}")
 
@@ -81,10 +82,10 @@ def show(model: str, response, seconds: float) -> None:
     print(f"--- 'Article URL:' lines in the answer: {len(urls)} (the prompt asks for up to 3)\n")
 
 
-def answer(client: genai.Client, store_name: str, question: str, model: str) -> None:
+def answer(client: genai.Client, store_name: str, question: str, model: str, fallbacks: tuple[str, ...]) -> None:
     print("Searching the docs and thinking (usually 5-15 s)...", file=sys.stderr)
     started = time.perf_counter()
-    used, response = ask(client, store_name, question, model)
+    used, response = ask(client, store_name, question, model, fallbacks)
     show(used, response, time.perf_counter() - started)
 
 
@@ -94,16 +95,21 @@ def main() -> int:
     if not api_key:
         print("error: GEMINI_API_KEY is not set (copy .env.sample to .env and fill it in)", file=sys.stderr)
         return EXIT_CONFIG
-    client = make_client(api_key)
     try:
-        store = FileSearchStore.open(client, os.environ.get("GEMINI_FILE_SEARCH_STORE", DEFAULT_STORE_NAME))
+        settings = load_settings()
+    except ValueError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return EXIT_CONFIG
+    client = make_client(api_key, settings.request_timeout_seconds)
+    try:
+        store = FileSearchStore.open(client, settings.store_name)
     except Exception as error:
         print(f"error: could not open the store. {explain(error)}", file=sys.stderr)
         return EXIT_CONFIG if classify(error) == "auth" else EXIT_API
-    model = os.environ.get("GEMINI_MODEL", DEFAULT_MODEL)
+    model, fallbacks = settings.chat_model, settings.chat_fallback_models
     if len(sys.argv) > 1:
         try:
-            answer(client, store.name, " ".join(sys.argv[1:]), model)
+            answer(client, store.name, " ".join(sys.argv[1:]), model, fallbacks)
         except ChatFailed as failure:
             print(f"error: {failure}", file=sys.stderr)
             return failure.code
@@ -116,7 +122,7 @@ def main() -> int:
         if not question:
             return 0
         try:
-            answer(client, store.name, question, model)
+            answer(client, store.name, question, model, fallbacks)
         except ChatFailed as failure:
             print(f"error: {failure}", file=sys.stderr)
             if failure.code == EXIT_CONFIG:  # a bad key will not fix itself; other problems may pass, so keep chatting

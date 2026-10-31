@@ -46,37 +46,53 @@ def classify(error: BaseException) -> str:
     return "unknown"
 
 
-def explain(error: BaseException) -> str:
+def _describe(error: BaseException) -> tuple[str, str]:
+    """(what happened, what to do). Retry notes show only the first part; a final failure shows both."""
     kind = classify(error)
     code = getattr(error, "code", None)
     if kind == "daily_quota":
-        return ("Gemini free-tier DAILY quota is used up (free tier: about 20 requests per model per day). "
-                "It resets once a day: wait, use another model (GEMINI_MODEL) or another API key.")
+        return ("Gemini free-tier DAILY quota is used up (free tier: about 20 requests per model per day)",
+                "It resets once a day: wait, use another model (chat_model in config/settings.toml) or another API key.")
     if kind == "rate_limit":
-        return "Gemini rate limit reached (too many requests in a short time). Wait a minute and run again, or lower UPLOAD_WORKERS."
+        return ("Gemini rate limit reached (too many requests in a short time)",
+                "Wait a minute and run again, or lower upload_workers in config/settings.toml.")
     if kind == "auth":
-        return "Gemini rejected the API key (invalid, expired or without access). Check GEMINI_API_KEY in .env."
+        return "Gemini rejected the API key (invalid, expired or without access)", "Check GEMINI_API_KEY in .env."
     if kind == "not_found":
-        return "Gemini could not find the model or store (the model name may have been retired). Check GEMINI_MODEL / GEMINI_FILE_SEARCH_STORE."
+        return ("Gemini could not find the model or store (the model name may have been retired)",
+                "Check chat_model / store_name in config/settings.toml.")
     if kind == "client_error":
-        return f"Gemini refused the request (HTTP {code}): {getattr(error, 'message', error)}"
+        return f"Gemini refused the request (HTTP {code}): {getattr(error, 'message', error)}", ""
     if kind == "server_error":
-        return f"Gemini is overloaded or down (HTTP {code}) even after retries. Run again later."
+        return f"Gemini is overloaded or down (HTTP {code})", "It was retried and still failed; run again later."
     if kind == "timeout":
-        return ("Timed out waiting for the server (no answer within the request timeout). Check the network and run again; "
-                "raise GEMINI_TIMEOUT_SECONDS if answers are just slow.")
+        return ("Timed out waiting for the server (no answer within the request timeout)",
+                "Check the network and run again; raise request_timeout_seconds in config/settings.toml if answers are just slow.")
     if kind == "indexing_timeout":
-        return f"Gemini did not finish indexing in time: {error}. The next run retries that file."
+        return f"Gemini did not finish indexing in time: {error}", "The next run retries that file."
     if kind == "network":
-        return "Cannot reach the server (network down, DNS or proxy problem). Check your internet connection and run again."
+        return "Cannot reach the server (network down, DNS or proxy problem)", "Check your internet connection and run again."
     if kind == "help_center":
         status = getattr(getattr(error, "response", None), "status_code", None)
         if status == 404:
-            return "Help Center URL not found (HTTP 404). Check HELP_CENTER_URL."
-        return f"The Help Center kept failing after retries ({type(error).__name__}, HTTP {status}). Run again in a few minutes."
+            return "Help Center URL not found (HTTP 404)", "Check help_center_url in config/settings.toml."
+        return f"The Help Center kept failing after retries ({type(error).__name__}, HTTP {status})", "Run again in a few minutes."
     if kind == "input":
-        return str(error)
-    return f"Unexpected {type(error).__name__}: {error}"
+        return str(error), ""
+    return f"Unexpected {type(error).__name__}: {error}", ""
+
+
+def summarize(error: BaseException) -> str:
+    """What happened, in one short clause: for notes such as "retrying in 3s"."""
+    return _describe(error)[0]
+
+
+def explain(error: BaseException) -> str:
+    """What happened and what to do about it: for the final message of a failure."""
+    summary, advice = _describe(error)
+    if not advice:
+        return summary
+    return f"{summary}. {advice}"
 
 
 def is_transient(error: BaseException) -> bool:

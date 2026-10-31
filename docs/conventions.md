@@ -33,28 +33,32 @@ has its own message that says what happened and what to do. *Why:* the daily job
 | Case | Message says | Handling |
 |---|---|---|
 | Gemini daily free quota used up (429 `PerDay`) | quota used up, resets daily; wait / other model / other key | not retried; the run stops early (every upload would fail the same way); `chat.py` goes to the next model |
-| Per-minute rate limit (429) | wait a minute or lower `UPLOAD_WORKERS` | retried with backoff 2/4/8/16 s |
+| Per-minute rate limit (429) | wait a minute or lower `upload_workers` | retried with backoff 2/4/8/16 s |
 | Bad/expired key (400 "API key", 401, 403) | key rejected, check `GEMINI_API_KEY` | not retried; run stops; exit 2 in the scripts |
-| Model/store not found (404) | model may be retired, check `GEMINI_MODEL`/store name | not retried; `chat.py` tries the next model |
+| Model/store not found (404) | model may be retired, check `chat_model`/`store_name` | not retried; `chat.py` tries the next model |
 | Gemini 5xx | overloaded/down, run again later | retried, then reported |
-| Request timeout (no answer within `GEMINI_TIMEOUT_SECONDS`, default 90) | timed out, check network / raise the timeout | retried a bounded number of times; one file failing does not stop the others |
+| Request timeout (no answer within `request_timeout_seconds`, default 90) | timed out, check network / raise the timeout | retried a bounded number of times; one file failing does not stop the others |
 | Indexing slower than 300 s | did not finish indexing; next run retries | file counted as failed |
 | Network down / DNS | cannot reach the server | retried, then reported |
-| Help Center timeout / 404 / 5xx after retries | names `HELP_CENTER_URL` for 404 | job aborts before touching the store, exit 3 |
+| Help Center timeout / 404 / 5xx after retries | names `help_center_url` for 404 | job aborts before touching the store, exit 3 |
 | Bad input (missing id list, no articles, empty fetch) | the exact problem | exit 2, store untouched |
 | Anything unknown | `Unexpected <Type>: ...` + traceback | exit 3 |
 
 - **Hard limits against hanging:** every HTTP request has a timeout (the SDK default is *no timeout*, so `make_client` always sets one); the whole job stops starting
-  uploads after `JOB_MAX_MINUTES` (default 30, below the workflow's 45-minute cut-off); one `chat.py` question gives up after 150 s; retries are always bounded.
+  uploads after `job_max_minutes` (default 30, below the workflow's 45-minute cut-off); one `chat.py` question gives up after 150 s; retries are always bounded.
 - **Exit codes:** 0 ok | 1 some uploads failed (the next run retries them) | 2 configuration/input problem | 3 API or network problem.
 - **Per-item problem -> keep going:** one failed upload is logged with its reason, counted in `failed=`, the others continue.
-- **Systemic problem -> fail loudly:** empty fetch, mass deletion (> 50% of the store) is refused and reported as a problem.
+- **Systemic problem -> fail loudly:** empty fetch, mass deletion (> 50% of the store) is refused and reported as a problem (exit 1). The refusal names the one-off override
+  `python scripts/sync_docs.py --allow-mass-delete`, to be run by a human after deliberately shrinking the list; it is never set in the workflow and never applies to partial (`--limit`) runs.
 - **Order of operations for updates:** upload the new version, then delete the old; a crash leaves a duplicate that the next run removes.
 
 ## 5. Configuration
-- Environment variables only, read in `main.py` (and dev scripts), every one listed in `.env.sample` (a test enforces this).
-  No config files, no CLI flags in the job. *Why:* the job runs in Docker/cron where env vars are the standard injection point.
-- Secrets never in the repo or image: `.env` is git/docker-ignored; the key is passed at `docker run`.
+- **One secret, one environment variable:** `GEMINI_API_KEY` (in `.env`, git-ignored; `.env.sample` is the empty template the task asks for). A hygiene test fails if code reads any other
+  variable, if `.env.sample` holds anything but the empty key, or if a key-shaped value appears in any file that would be committed. *Why:* a leaked key must be impossible to commit by accident.
+- **Everything else is `config/settings.toml`** (`helpbot/settings.py`): store name, article list file, articles folder, Help Center URL, upload workers, timeouts, chat model and fallbacks. It is
+  validated: a misspelt name or a value of the wrong type is an error (exit 2), never silently ignored. TOML because Python reads it with the standard library (`tomllib`) and it allows comments.
+- **One-off actions are command-line flags**, not settings: `--allow-mass-delete`, `--limit N`. *Why:* a dangerous switch must not be left on in a file by mistake.
+- Secrets never in the repo or image: the key is passed at `docker run` or comes from a repository secret.
 
 ## 6. Markdown output (what the converter guarantees)
 File = `# Title`, blank, `Article URL: <html_url>`, blank, body. Name = `<id>-<slug>.md`.
@@ -71,7 +75,7 @@ File = `# Title`, blank, `Article URL: <html_url>`, blank, body. Name = `<id>-<s
 ## 7. Delta sync and state
 - State lives **in the store**: each document carries `article_id` and `content_hash` metadata; each run lists the store and compares.
   *Why:* cron containers have no persistent disk; this needs no database, file or secret besides the API key.
-- Hash = SHA-256 of the final Markdown. `ARTICLE_LIMIT=N` (newest N by `updated_at`) is a partial mode and **never deletes**.
+- Hash = SHA-256 of the final Markdown. `--limit N` (newest N by `updated_at`) is a partial mode and **never deletes**.
 - Known limit: changing chunk settings alone does not change the hash (see backlog B2).
 
 ## 7b. Scope of the job
@@ -79,7 +83,7 @@ File = `# Title`, blank, `Article URL: <html_url>`, blank, body. Name = `<id>-<s
   test keeps in step with the list; includes the YouTube article). *Why:* it is the flow a reviewer will run and read; small, fast, within free-tier limits.
 - The job fetches the Help Center listing (a handful of paginated requests) and keeps only the listed ids; there is no "all articles" mode.
 - The list is the truth: documents of articles that left the list are deleted (still behind the 50% guard); an id that no longer
-  exists on the site is only a warning. `ARTICLE_LIMIT=N` (newest N) is a partial mode and never deletes.
+  exists on the site is only a warning. `--limit N` (newest N) is a partial mode and never deletes.
 
 ## 8. Chunking
 400 tokens per chunk, 50 overlap (~12%). *Why:* articles average ~1.4k tokens and are step-by-step procedures; ~400 tokens keeps a few
@@ -89,11 +93,11 @@ logged `chunks_estimated` uses `chars / 4`. Values are constants in `chunking.py
 ## 8b. Model choice
 `scripts/chat.py` uses `gemini-3.5-flash` by default. *Why:* measured, not assumed: the cheaper lite model ignores "Cite up to 3 `Article URL:` lines"
 (0/4 answers), `gemini-3.5-flash` follows it (4/4). Document layout did not matter. Model names drift (`gemini-2.5-*` already return 404), so
-the script has fallbacks and a `GEMINI_MODEL` override.
+the script has fallbacks and the model names live in `config/settings.toml`.
 
 ## 8c. Scripts
 Three user-facing scripts, each a thin entry point over the package (one implementation, no copies): `sync_docs.py` runs `main.main()` (same job as the
-daily workflow), `check_store.py` is read-only (reuses `plan_delta` to compare the store with `articles/`), `chat.py` asks the bot. Each one finds the repo
+daily workflow), `check_store.py` is read-only (reuses `plan_delta` to compare the store with `articles/`; prints statistics and one entry per article so a mismatch can be debugged), `chat.py` asks the bot. Each one finds the repo
 root and `.env` from its own location, so it works from any directory. Dev tools: `check_markdown.py`, `verify_articles.py`, `demo_delta.py`.
 `chat.py` prints a status line and the answer time, because a request takes 5-25 s (see backlog B23).
 

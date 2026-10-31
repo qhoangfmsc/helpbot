@@ -54,19 +54,23 @@ def make_article(article_id: int | str, title: str | None = None, body: str = "<
     )
 
 
-def run_main(monkeypatch, tmp_path, store, articles, **env) -> int:
-    """Run `main.main()` with the network replaced by `articles` and `store`; env values are strings."""
-    import main
+def run_main(monkeypatch, tmp_path, store, articles, argv=(), ids_file=None, **settings) -> int:
+    """Run `main.main()` with the network replaced by `articles` and `store`.
 
-    monkeypatch.setattr(main, "load_dotenv", lambda: None)
+    `settings` override fields of helpbot.settings.Settings; `argv` are command-line flags; the article list defaults to
+    "exactly the articles given" (written to a temporary id file) unless `ids_file` is passed.
+    """
+    import main
+    from helpbot.settings import Settings
+
+    monkeypatch.setattr(main, "load_dotenv", lambda path: None)
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
-    monkeypatch.setenv("ARTICLES_DIR", str(tmp_path / "out"))
-    ids = tmp_path / "default_ids.txt"  # by default the job is told to sync exactly the articles the test provides
-    ids.write_text("\n".join(a.id for a in articles) + "\n", encoding="utf-8")
-    monkeypatch.setenv("ARTICLE_IDS_FILE", str(ids))
-    for key, value in env.items():
-        monkeypatch.setenv(key, value)
+    if ids_file is None:
+        ids = tmp_path / "default_ids.txt"
+        ids.write_text("\n".join(a.id for a in articles) + "\n", encoding="utf-8")
+        ids_file = str(ids)
+    config = Settings(articles_dir=str(tmp_path / "out"), article_ids_file=ids_file, **settings)
     monkeypatch.setattr(main, "fetch_articles", lambda base_url: iter(articles))
-    monkeypatch.setattr(main, "make_client", lambda api_key: object())
+    monkeypatch.setattr(main, "make_client", lambda api_key, timeout=None: object())
     monkeypatch.setattr(main.FileSearchStore, "open", lambda client, name: store)
-    return main.main()
+    return main.main(list(argv), settings=config)

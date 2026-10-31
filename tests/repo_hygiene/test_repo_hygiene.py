@@ -29,11 +29,26 @@ def test_env_file_is_ignored_and_a_sample_is_provided():
     assert re.search(r"^GEMINI_API_KEY=$", sample, re.M)  # present but empty
 
 
-def test_every_environment_variable_the_code_reads_is_documented_in_env_sample():
-    sample = (ROOT / ".env.sample").read_text()
-    read = {name for p in source_files() if p.name != "test_repo_hygiene.py" for name in ENV_READ.findall(p.read_text())}
-    assert read, "expected the code to read some environment variables"
-    assert [name for name in sorted(read) if name not in sample] == []
+def test_the_api_key_is_the_only_environment_variable_the_code_reads():
+    read = {name for p in source_files() if "tests" not in p.parts for name in ENV_READ.findall(p.read_text())}
+    assert read == {"GEMINI_API_KEY"}  # everything else lives in config/settings.toml
+
+
+def test_env_sample_holds_only_the_empty_key():
+    lines = [l for l in (ROOT / ".env.sample").read_text().splitlines() if l.strip() and not l.startswith("#")]
+    assert lines == ["GEMINI_API_KEY="]
+
+
+def test_no_api_key_value_sits_in_any_file_that_would_be_committed():
+    value = re.compile(r"GEMINI_API_KEY\s*=\s*[\"']?[A-Za-z0-9._\-]{20,}|AIza[0-9A-Za-z_\-]{30,}")
+    skipped_dirs = {".git", ".venv", "data", "__pycache__", ".pytest_cache", "articles"}
+    leaks = [
+        str(p.relative_to(ROOT))
+        for p in ROOT.rglob("*")
+        if p.is_file() and p.name != ".env" and not skipped_dirs & set(p.relative_to(ROOT).parts) and p.suffix not in {".pyc", ".png", ".jpg"}
+        and value.search(p.read_text(encoding="utf-8", errors="ignore"))
+    ]
+    assert leaks == []
 
 
 def test_dependencies_are_pinned():
@@ -70,3 +85,10 @@ def test_daily_workflow_runs_once_a_day_with_the_key_from_secrets():
     assert minute.isdigit() and hour.isdigit() and (day, month, weekday) == ("*", "*", "*")  # exactly once per day
     assert "${{ secrets.GEMINI_API_KEY }}" in workflow
     assert not SECRET.search(workflow)
+
+
+def test_images_and_files_linked_from_the_readme_exist():
+    readme = (ROOT / "README.md").read_text()
+    targets = re.findall(r"!\[[^\]]*\]\(([^)\s]+)\)", readme) + re.findall(r"`((?:docs|scripts|config|prompts)/[\w./\-]+)`", readme)
+    assert targets, "expected the README to link at least the screenshot"
+    assert [t for t in targets if not t.startswith("http") and not (ROOT / t).exists()] == []

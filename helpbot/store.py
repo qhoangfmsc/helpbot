@@ -1,7 +1,6 @@
 """Gemini File Search store: the only module that talks to the Gemini API."""
 
 import logging
-import os
 import time
 from pathlib import Path
 from typing import Callable, TypeVar
@@ -10,7 +9,7 @@ from google import genai
 from google.genai import types
 
 from helpbot.chunking import MAX_TOKENS_PER_CHUNK, OVERLAP_TOKENS
-from helpbot.problems import explain, is_transient
+from helpbot.problems import is_transient, summarize
 from helpbot.sync import RemoteDoc
 
 log = logging.getLogger(__name__)
@@ -26,14 +25,13 @@ POLL_SECONDS = 2.0
 REQUEST_TIMEOUT_SECONDS = 90.0
 
 
-def http_options() -> types.HttpOptions:
+def http_options(timeout_seconds: float = REQUEST_TIMEOUT_SECONDS) -> types.HttpOptions:
     """The SDK's default is NO timeout (a stalled connection would hang forever), so one is always set."""
-    seconds = float(os.environ.get("GEMINI_TIMEOUT_SECONDS", REQUEST_TIMEOUT_SECONDS))
-    return types.HttpOptions(timeout=int(seconds * 1000))  # milliseconds
+    return types.HttpOptions(timeout=int(timeout_seconds * 1000))  # milliseconds
 
 
-def make_client(api_key: str) -> genai.Client:
-    return genai.Client(api_key=api_key, http_options=http_options())
+def make_client(api_key: str, timeout_seconds: float = REQUEST_TIMEOUT_SECONDS) -> genai.Client:
+    return genai.Client(api_key=api_key, http_options=http_options(timeout_seconds))
 
 
 def with_retries(call: Callable[[], T], attempts: int = 5, base_delay: float = 2.0, sleep=time.sleep) -> T:
@@ -48,7 +46,7 @@ def with_retries(call: Callable[[], T], attempts: int = 5, base_delay: float = 2
             if attempt == attempts or not is_transient(error):
                 raise
             delay = min(base_delay * 2 ** (attempt - 1), 60.0)
-            log.warning("%s Retry %s/%s in %.0fs.", explain(error), attempt, attempts - 1, delay)
+            log.warning("%s. Retry %s/%s in %.0fs.", summarize(error), attempt, attempts - 1, delay)
             sleep(delay)
     raise AssertionError("unreachable")
 

@@ -1,7 +1,7 @@
 """Live demo of the delta rule on a throwaway store: existing articles are skipped, only new/edited ones upload.
 
 Usage: python scripts/demo_delta.py [--keep]     (uses the real API: ~40 uploads, deletes the store afterwards)
-Scenarios use the newest-N window (ARTICLE_LIMIT): 30 -> same -> 40 -> a brand-new article -> an edited article.
+Scenarios use the newest-N window (--limit): 30 -> same -> 40 -> a brand-new article -> an edited article.
 """
 
 import dataclasses
@@ -30,7 +30,7 @@ def main() -> int:
     edited = [dataclasses.replace(newest, body_html=newest.body_html + "<p>Edited after the first run.</p>")] + live[1:]
     out = Path(tempfile.mkdtemp())
 
-    scenarios = [  # (what happens, articles seen by the job, ARTICLE_LIMIT, expected (added, updated, skipped))
+    scenarios = [  # (what happens, articles seen by the job, limit, expected (added, updated, skipped))
         ("first run, 30 newest", live, 30, (30, 0, 0)),
         ("same again (nothing changed)", live, 30, (0, 0, 30)),
         ("window widened to 40 (10 older, not yet uploaded)", live, 40, (10, 0, 30)),

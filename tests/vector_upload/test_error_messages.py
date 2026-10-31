@@ -5,7 +5,7 @@ import pytest
 import requests
 from google.genai import errors
 
-from helpbot.problems import classify, explain, is_transient
+from helpbot.problems import classify, explain, is_transient, summarize
 from helpbot.store import REQUEST_TIMEOUT_SECONDS, http_options, with_retries
 
 
@@ -79,8 +79,14 @@ def test_timeouts_and_network_errors_are_retried_a_limited_number_of_times():
         assert len(calls) == 3  # bounded: never an endless loop
 
 
-def test_every_request_has_a_timeout(monkeypatch):
-    monkeypatch.delenv("GEMINI_TIMEOUT_SECONDS", raising=False)
+def test_every_request_has_a_timeout():
     assert http_options().timeout == int(REQUEST_TIMEOUT_SECONDS * 1000)  # the SDK default would be None = wait forever
-    monkeypatch.setenv("GEMINI_TIMEOUT_SECONDS", "5")
-    assert http_options().timeout == 5000
+    assert http_options(5).timeout == 5000
+
+
+def test_retry_notes_do_not_claim_that_retrying_already_failed():
+    overloaded = gemini(503, "overloaded")
+    assert "run again later" not in summarize(overloaded) and "run again later" in explain(overloaded)
+    assert summarize(overloaded) == "Gemini is overloaded or down (HTTP 503)"
+    quota = gemini(429, quota_id="GenerateRequestsPerDayPerProjectPerModel-FreeTier")
+    assert "resets once a day" in explain(quota) and "resets once a day" not in summarize(quota)

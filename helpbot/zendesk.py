@@ -55,7 +55,7 @@ def fetch_articles(
         resp = session.get(url, params=params, timeout=TIMEOUT_SECONDS)
         resp.raise_for_status()
         data = resp.json()
-        log.info("fetched page=%s/%s count=%s", data["page"], data["page_count"], data["count"])
+        log.info("read Help Center page %s/%s (the site has %s articles in total)", data["page"], data["page_count"], data["count"])
         for raw in data["articles"]:
             if raw.get("draft") or not raw.get("body"):
                 continue

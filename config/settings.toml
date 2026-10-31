@@ -1,0 +1,14 @@
+# Everything that is not a secret. The only environment variable is GEMINI_API_KEY (see .env.sample).
+# Paths are relative to the repo root. Delete a line to use its default.
+
+help_center_url = "https://support.optisigns.com"   # Zendesk Help Center to read the articles from
+article_ids_file = "config/article_ids.txt"          # the articles to keep in sync (one id per line)
+articles_dir = "articles"                            # where the Markdown files are written
+store_name = "helpbot-docs"                          # Gemini File Search store (created on the first run)
+
+upload_workers = 4                                   # parallel uploads
+request_timeout_seconds = 90                         # per HTTP request (the SDK's own default is no timeout)
+job_max_minutes = 30                                 # no new upload starts after this; the next run continues
+
+chat_model = "gemini-3.5-flash"                      # used by scripts/chat.py; the lite models do not print "Article URL:" lines
+chat_fallback_models = ["gemini-3-flash-preview", "gemini-flash-lite-latest"]

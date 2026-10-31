@@ -94,7 +94,7 @@ def test_chat_without_a_key_exits_2_and_says_how_to_fix_it(monkeypatch, capsys):
 def test_chat_exits_3_with_the_reason_when_the_store_cannot_be_opened(monkeypatch, capsys):
     monkeypatch.setattr(chat, "load_dotenv", lambda path: None)
     monkeypatch.setenv("GEMINI_API_KEY", "k")
-    monkeypatch.setattr(chat, "make_client", lambda key: object())
+    monkeypatch.setattr(chat, "make_client", lambda key, timeout=None: object())
     monkeypatch.setattr(chat.FileSearchStore, "open", staticmethod(lambda client, name: (_ for _ in ()).throw(httpx.ConnectError("down"))))
     monkeypatch.setattr(chat.sys, "argv", ["chat.py", "hello"])
     assert chat.main() == 3
@@ -104,7 +104,7 @@ def test_chat_exits_3_with_the_reason_when_the_store_cannot_be_opened(monkeypatc
 def test_check_store_reports_why_it_could_not_read_the_store(monkeypatch, capsys):
     monkeypatch.setattr(check_store, "load_dotenv", lambda path: None)
     monkeypatch.setenv("GEMINI_API_KEY", "k")
-    monkeypatch.setattr(check_store, "make_client", lambda key: object())
+    monkeypatch.setattr(check_store, "make_client", lambda key, timeout=None: object())
     monkeypatch.setattr(check_store.FileSearchStore, "open", staticmethod(lambda client, name: (_ for _ in ()).throw(DAILY)))
     assert check_store.main() == 3
     assert "DAILY quota" in capsys.readouterr().err

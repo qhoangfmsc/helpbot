@@ -36,14 +36,14 @@ def ids_file(tmp_path, *ids):
 def test_job_uploads_only_the_listed_articles(monkeypatch, tmp_path):
     store = FakeStore()
     articles = [make_article(i) for i in range(1, 11)]
-    assert run_main(monkeypatch, tmp_path, store, articles, ARTICLE_IDS_FILE=ids_file(tmp_path, "2", "5", "9")) == 0
+    assert run_main(monkeypatch, tmp_path, store, articles, ids_file=ids_file(tmp_path, "2", "5", "9")) == 0
     assert sorted(store.uploaded_ids) == ["2", "5", "9"]
 
 
 def test_second_run_over_the_same_list_skips_everything(monkeypatch, tmp_path):
     store = FakeStore()
     articles = [make_article(i) for i in range(1, 11)]
-    env = {"ARTICLE_IDS_FILE": ids_file(tmp_path, "2", "5", "9")}
+    env = {"ids_file": ids_file(tmp_path, "2", "5", "9")}
     run_main(monkeypatch, tmp_path, store, articles, **env)
     store.calls.clear()
     assert run_main(monkeypatch, tmp_path, store, articles, **env) == 0
@@ -53,27 +53,27 @@ def test_second_run_over_the_same_list_skips_everything(monkeypatch, tmp_path):
 def test_documents_of_articles_removed_from_the_list_are_deleted(monkeypatch, tmp_path):
     store = FakeStore()
     articles = [make_article(i) for i in range(1, 11)]
-    run_main(monkeypatch, tmp_path, store, articles, ARTICLE_IDS_FILE=ids_file(tmp_path, "1", "2", "3", "4"))
-    run_main(monkeypatch, tmp_path, store, articles, ARTICLE_IDS_FILE=ids_file(tmp_path, "1", "2", "3"))
+    run_main(monkeypatch, tmp_path, store, articles, ids_file=ids_file(tmp_path, "1", "2", "3", "4"))
+    run_main(monkeypatch, tmp_path, store, articles, ids_file=ids_file(tmp_path, "1", "2", "3"))
     assert sorted(d.article_id for d in store.docs) == ["1", "2", "3"]
 
 
 def test_a_listed_id_that_is_gone_from_the_site_is_a_warning_not_a_failure(monkeypatch, tmp_path, caplog):
     store = FakeStore()
     articles = [make_article(1), make_article(2)]
-    code = run_main(monkeypatch, tmp_path, store, articles, ARTICLE_IDS_FILE=ids_file(tmp_path, "1", "2", "404"))
+    code = run_main(monkeypatch, tmp_path, store, articles, ids_file=ids_file(tmp_path, "1", "2", "404"))
     assert code == 0 and sorted(store.uploaded_ids) == ["1", "2"]
     assert "404" in caplog.text
 
 
 def test_missing_ids_file_exits_with_code_2_and_uploads_nothing(monkeypatch, tmp_path):
     store = FakeStore()
-    assert run_main(monkeypatch, tmp_path, store, [make_article(1)], ARTICLE_IDS_FILE=str(tmp_path / "nope.txt")) == 2
+    assert run_main(monkeypatch, tmp_path, store, [make_article(1)], ids_file=str(tmp_path / "nope.txt")) == 2
     assert store.calls == []
 
 
 def test_a_list_that_matches_nothing_fails_instead_of_wiping_the_store(monkeypatch, tmp_path, caplog):
     store = FakeStore([RemoteDoc("docs/1", "1", "h"), RemoteDoc("docs/2", "2", "h")])
-    code = run_main(monkeypatch, tmp_path, store, [make_article(1)], ARTICLE_IDS_FILE=ids_file(tmp_path, "999"))
+    code = run_main(monkeypatch, tmp_path, store, [make_article(1)], ids_file=ids_file(tmp_path, "999"))
     assert code == 2 and "no articles to write" in caplog.text
     assert len(store.docs) == 2

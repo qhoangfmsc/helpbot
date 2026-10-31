@@ -6,9 +6,9 @@ from tests.support import FakeStore, make_article, run_main
 def test_missing_api_key_exits_with_code_2(monkeypatch):
     import main
 
-    monkeypatch.setattr(main, "load_dotenv", lambda: None)
+    monkeypatch.setattr(main, "load_dotenv", lambda path: None)
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
-    assert main.main() == 2
+    assert main.main([]) == 2
 
 
 def test_successful_run_exits_0_and_logs_the_summary(monkeypatch, tmp_path, caplog):
@@ -29,5 +29,5 @@ def test_failed_upload_makes_the_job_exit_non_zero(monkeypatch, tmp_path):
 def test_article_limit_env_selects_the_newest_articles(monkeypatch, tmp_path):
     store = FakeStore()
     articles = [make_article(i, updated_at=f"2026-01-{i:02d}T00:00:00Z") for i in range(1, 11)]
-    assert run_main(monkeypatch, tmp_path, store, articles, ARTICLE_LIMIT="3") == 0
+    assert run_main(monkeypatch, tmp_path, store, articles, argv=["--limit", "3"]) == 0
     assert sorted(store.uploaded_ids) == ["10", "8", "9"]

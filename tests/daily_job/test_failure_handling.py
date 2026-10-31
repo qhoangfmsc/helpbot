@@ -78,16 +78,15 @@ def test_exit_code_3_and_a_clear_message_when_the_store_cannot_be_opened(monkeyp
 
 def _run_without_store_patch(monkeypatch, tmp_path):
     import main
+    from helpbot.settings import Settings
 
-    monkeypatch.setattr(main, "load_dotenv", lambda: None)
-    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
-    monkeypatch.setenv("ARTICLES_DIR", str(tmp_path / "out"))
     ids = tmp_path / "ids.txt"
     ids.write_text("1\n", encoding="utf-8")
-    monkeypatch.setenv("ARTICLE_IDS_FILE", str(ids))
+    monkeypatch.setattr(main, "load_dotenv", lambda path: None)
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     monkeypatch.setattr(main, "fetch_articles", lambda base_url: iter([make_article(1)]))
-    monkeypatch.setattr(main, "make_client", lambda api_key: object())
-    return main.main()
+    monkeypatch.setattr(main, "make_client", lambda api_key, timeout=None: object())
+    return main.main([], settings=Settings(articles_dir=str(tmp_path / "out"), article_ids_file=str(ids)))
 
 
 def test_exit_code_3_when_the_help_center_times_out(monkeypatch, tmp_path, caplog):
@@ -96,11 +95,11 @@ def test_exit_code_3_when_the_help_center_times_out(monkeypatch, tmp_path, caplo
     def timeout(base_url):
         raise requests.exceptions.ReadTimeout()
 
-    monkeypatch.setattr(main, "load_dotenv", lambda: None)
+    monkeypatch.setattr(main, "load_dotenv", lambda path: None)
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     monkeypatch.setattr(main, "fetch_articles", timeout)
     with caplog.at_level(logging.ERROR, logger="helpbot"):
-        assert main.main() == 3
+        assert main.main([]) == 3
     assert "Timed out waiting for the server" in caplog.text
 
 
@@ -110,29 +109,39 @@ def test_exit_code_3_when_the_network_is_down(monkeypatch, tmp_path, caplog):
     def down(base_url):
         raise requests.exceptions.ConnectionError()
 
-    monkeypatch.setattr(main, "load_dotenv", lambda: None)
+    monkeypatch.setattr(main, "load_dotenv", lambda path: None)
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     monkeypatch.setattr(main, "fetch_articles", down)
     with caplog.at_level(logging.ERROR, logger="helpbot"):
-        assert main.main() == 3
+        assert main.main([]) == 3
     assert "Cannot reach the server" in caplog.text
 
 
 def test_exit_code_2_for_a_missing_key_and_nothing_is_called(monkeypatch, caplog):
     import main
 
-    monkeypatch.setattr(main, "load_dotenv", lambda: None)
+    monkeypatch.setattr(main, "load_dotenv", lambda path: None)
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     monkeypatch.setattr(main, "fetch_articles", lambda base_url: (_ for _ in ()).throw(AssertionError("must not be called")))
-    assert main.main() == 2
+    assert main.main([]) == 2
 
 
 def test_an_unexpected_bug_still_exits_non_zero_with_a_traceback(monkeypatch, tmp_path, caplog):
     import main
 
-    monkeypatch.setattr(main, "load_dotenv", lambda: None)
+    monkeypatch.setattr(main, "load_dotenv", lambda path: None)
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     monkeypatch.setattr(main, "fetch_articles", lambda base_url: (_ for _ in ()).throw(KeyError("boom")))
     with caplog.at_level(logging.ERROR, logger="helpbot"):
-        assert main.main() == 3
+        assert main.main([]) == 3
     assert "Unexpected KeyError" in caplog.text and "Traceback" in caplog.text
+
+
+def test_the_mass_delete_flag_lets_the_job_prune_a_store_that_is_mostly_stale(monkeypatch, tmp_path):
+    store = FakeStore()
+    old = [make_article(i) for i in range(1, 9)]
+    run_main(monkeypatch, tmp_path, store, old)
+    assert run_main(monkeypatch, tmp_path, store, old[:2]) == 1  # refused: 6 of 8 documents would go
+    assert len(store.docs) == 8
+    assert run_main(monkeypatch, tmp_path, store, old[:2], argv=["--allow-mass-delete"]) == 0
+    assert sorted(d.article_id for d in store.docs) == ["1", "2"]
