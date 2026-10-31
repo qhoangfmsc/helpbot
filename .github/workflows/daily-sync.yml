@@ -1,0 +1,35 @@
+name: daily-sync
+
+# Once a day: build the Docker image and run the job (scrape -> delta -> upload). Logs are public when the repo is public.
+on:
+  schedule:
+    - cron: "17 3 * * *"   # 03:17 UTC every day
+  workflow_dispatch:        # manual run button
+
+concurrency:
+  group: daily-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t helpbot .
+      - name: Run the job
+        shell: bash   # pipefail on: a failing job must fail this step even though output goes through tee
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: docker run --rm -e GEMINI_API_KEY helpbot 2>&1 | tee run.log
+      - name: Show added/updated/skipped on the run page
+        if: always()
+        run: grep " done " run.log >> "$GITHUB_STEP_SUMMARY" || echo "no summary line found" >> "$GITHUB_STEP_SUMMARY"
+      - name: Keep the log of the last run
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: run-log
+          path: run.log
+          retention-days: 30

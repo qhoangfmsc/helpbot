@@ -1,0 +1,16 @@
+.git
+.venv
+.env
+.claude
+CLAUDE.md
+CLAUDE.local.md
+NOTES.md
+README.md
+docs
+data
+samples
+tests
+scripts
+prompts
+**/__pycache__
+.pytest_cache
