@@ -20,6 +20,13 @@ Append-only log of decisions, confirmed facts and what was done per step. Newest
 | D12 | Commit messages follow Conventional Commits | User instruction |
 | D14 | Scrape all 417 but cap what is uploaded (`MAX_ARTICLES`); the cap is decided after the spike shows free-tier limits | User choice; scraping is cheap, upload is where limits bite |
 | D15 | Commit a 40-article sample (`samples/articles/`, incl. all 7 YouTube articles) built by `scripts/make_samples.py`; `data/` is git-ignored | User choice; reviewers see Markdown quality, repo stays small |
+| D18 | In-page `#anchor` links stay exactly as authored in the source (no rewrite/removal) | User choice: favour the spec's literal "preserve links" and the primary source over own edits |
+| D19 | Use the cheapest Gemini model that supports File Search for testing (flash-lite class) | User instruction: minimise cost/tokens |
+| D20 | One commit per finished step/feature, Conventional Commits; commit only after the user's request and a second confirmation | User instruction (2026-10-31) |
+| D21 | Chunking 400 tokens / 50 overlap; chunk count is a local estimate (`chars/4`), logged as `chunks_estimated` | API does not expose chunk counts; settings are tunable constants in `helpbot/chunking.py` |
+| D22 | Delete orphans (articles gone from the site) unless that would remove > 50% of the store or `MAX_ARTICLES` is set | A broken/partial fetch must not wipe the knowledge base |
+| D23 | New version is uploaded before the old one is deleted; a crash leaves a duplicate that the next run removes | Never leave an article without a document |
+| D17 | Commits need an explicit request AND a second confirmation after I show files + messages | User instruction (2026-10-31) |
 | D13 | Plan each step before doing it; settle open items from the previous step first | User instruction |
 
 ## Confirmed facts
@@ -58,3 +65,62 @@ Append-only log of decisions, confirmed facts and what was done per step. Newest
 - Provider switched to Gemini (D2); `.env.sample` now has `GEMINI_API_KEY`, `GEMINI_FILE_SEARCH_STORE`; `api-docs-check` open questions rewritten for Gemini.
 - Added `scripts/make_samples.py` (deterministic: all YouTube + 6 code + 6 table + even spread) -> `samples/articles/` 40 files (292 KB), `check_markdown.py` 40/40 ok; `data/` added to `.gitignore`.
 - Waiting on the user: create a Gemini API key and put it in `.env`; then the spike (step 2a) starts.
+
+### Step 1c - commits (2026-10-31)
+- Created 7 Conventional Commits on `main` for steps 0-1b, authored only by the repo owner (no co-author trailer); nothing pushed.
+- Rule 9 relaxed: commit only when the user asks, never push, user is the sole author. D16: no `Co-Authored-By` / tool attribution lines in this repo.
+
+### Step 1d - review fixes (2026-10-31)
+- Bug: whitespace-only inline tags (`<span> </span>`, `<strong> </strong>`, `<strong>\xa0</strong>`) were dropped, gluing words (`**Hello****World**`, `[x](url)or`). Fix: unwrap `span`; replace whitespace-only emphasis tags with a single space; drop only empty `p`/`li`. Glued link-word files 28 -> 8; the rest are images adjacent to text in the source HTML. `**P****review**` is split bold in the source, renders fine.
+- Added `retrying_session()` (5 retries, backoff 1s, 429/5xx, honours Retry-After) as the default session for Zendesk fetches.
+- Tests: 10 -> 15. Re-scraped 417/417 ok; `samples/articles` rebuilt 40/40 ok.
+
+### Step 2a - Gemini File Search spike (2026-10-31), done
+- Confirmed live (SDK `google-genai` 2.34.0, free tier, no card): create store, `upload_to_file_search_store` with `custom_metadata` (`article_id`, `content_hash`) and `chunking_config` (white-space: `max_tokens_per_chunk`, `max_overlap_tokens`), `documents.list/get/delete`, store info `active_documents_count`, `size_bytes`, `embedding_model=models/gemini-embedding-001`. Metadata round-trips through `documents.list` => stateless sync (D4) works.
+- Upload is async (operation); ~8 s per small file sequentially => 417 files ~ 1 h sequential. Consider thread pool and/or the `MAX_ARTICLES` cap.
+- NOT exposed: chunk count (neither store nor document). Fallback: estimate locally from token counts and chunking params, and label it "estimated" in logs/README.
+- Models: `gemini-2.5-*` return 404 for new users. `gemini-flash-latest`, `gemini-flash-lite-latest`, `gemini-3-flash-preview`, `gemini-3.5-flash` worked with File Search; `gemini-3.1-flash-lite*` returned intermittent 503 (high demand) => the query code needs retries.
+- Query with `file_search` tool + the system prompt, model `gemini-3.5-flash-lite` (cheapest that worked): correct 5-bullet answer for "How do I add a YouTube video?" with a doc link. `grounding_metadata.grounding_chunks[].retrieved_context` gives `title` (our display_name) and chunk `text`.
+- `metadata_filter='article_id = "..."'` works (only that document was retrieved).
+- `documents.delete` needs `config={"force": True}` for non-empty documents (400 FAILED_PRECONDITION otherwise); `file_search_stores.delete(..., force=True)` works. Update = delete document + upload new one.
+- Spike store deleted; no resources left in the account.
+- Concern: the model cited the doc as a Markdown link, not as literal `Article URL:` lines; only 1 of 3 retrieved chunks contained the `Article URL:` header line. To test in step 2b with the verbatim prompt (idea: repeat the URL line per H2 section so each chunk carries it).
+- UNVERIFIED: AI Studio UI using an API-created store (user must check in the UI after the real upload); rate limit under concurrent uploads.
+
+### Pre-2b checks (2026-10-31)
+- Determinism: two consecutive scrapes produced 0 differing files => content hash is stable, hash-based delta is safe (attachment-token links also stable).
+- Corpus scan (417 files): 236 contain nbsp/zero-width chars (to normalise), 14 empty headings (to drop), 197 jump from H1 straight to H3 (cosmetic, kept), 822/3414 images have empty alt (kept), biggest file 134 KB, avg 5.7 KB (~1.4k tokens).
+- AI Studio: no source found showing that a File Search store created via API can be selected in the AI Studio chat UI; one source says the AI Studio File Search demo needs a paid key (third-party, UNVERIFIED). Plan: user checks the UI; prepare a clarifying email to the recruiter.
+- Elapsed time so far is roughly 1.5-1.7 h of the 8 h budget (estimated from file timestamps; not measured). Start recording per step.
+
+### Roadmap (updated)
+0 setup [done] - 1 scrape [done] - 1e core review (small) - 2a spike [done] - 2b pipeline: delta + upload + logging + chat script - 3 assistant in AI Studio + screenshot - 4 Docker - 5 deploy daily job + public logs link - 6 README, CI/tests visibility, verify-submission.
+
+### Step 1e - core review and fact-check (2026-10-31)
+- Fixes: `\xa0`/zero-width chars normalised (text nodes first, so empty wrappers are detected); empty headings and empty links dropped; image wrapped in `<strong>` inside a heading kept; title whitespace collapsed; `write_articles` refuses an empty fetch (a source outage must fail the job), removes stale generated files only (`<id>[-slug].md`), never other `.md`; Zendesk retry caps `Retry-After` at 60 s (`retry_after_max`); `<ol start="N">` kept (step numbers were restarting at 1 - found by the live fact-check).
+- /code-review (medium) findings triaged: 3 valid fixed (zero-width in empty wrappers, unsafe stale deletion, uncapped Retry-After); normalising chars inside code is intentional (documented); 3 dismissed (speculative or already covered; the CLAUDE.md "contradiction" was stale/incorrect).
+- `scripts/verify_samples.py` (network): re-fetches every article from the live API and the public page, then checks title, `Article URL`, byte equality with a fresh conversion, word multiset (source vs Markdown, independent of the converter), link targets, images, code blocks, headings. First run 20/40 flagged: all verifier artefacts except one real bug (`<ol start>`); after fixing both, **40/40 samples verified against the live site** (public pages answer 200, same title, same body words, unchanged since scraping).
+- Verifier semantics learned: `<ol>` item numbers are implied text; iframes appear as links; callout headings live in blockquotes; link-text==URL is an autolink `<url>`; link targets inside code blocks stay as plain text.
+- Tests 15 -> 27. Corpus 417/417 lint ok (now also flags empty headings and invisible chars).
+
+### Step 1f/2b - full-corpus fact-check, then upload pipeline (2026-10-31)
+- Live fact-check of all 417 articles: 408 ok; the 9 flagged are verifier artefacts or source quirks (words split across inline tags in the verifier, `at<a>` / `</a>We` glued in the source HTML, an example `mailto:` with `<ip>`); no converter bug left. Only 2 of the 4 "glued" cases were inspected individually, the rest follow the same pattern.
+- Built: `prompts/system_prompt.txt` (verbatim from the PDF, bullet U+2022 and straight quotes; test), `helpbot/sync.py` (pure delta), `helpbot/chunking.py`, `helpbot/store.py` (Gemini wrapper: find/create store, list docs with metadata, upload+poll, force delete, retries on 5xx/429), `helpbot/pipeline.py` (thread pool uploads, counters updated single-threaded, deletion guards), `main.py` wiring via env, `scripts/chat.py`.
+- Bug caught in review of my own code: counters were mutated from worker threads; moved deletion of replaced docs after the pool.
+- Tests 27 -> 56 (all offline). Real API checks on a throwaway store `helpbot-test` (MAX_ARTICLES=6, 4 workers): run1 added=6 in ~18 s; run2 skipped=6; after planting a doc with a wrong hash: updated=1 deleted=1; run4 skipped=6. This proves add/skip/update on the real API; orphan deletion is only covered by unit tests.
+- Throughput: ~3 s/file effective with 4 workers (~8 s/file sequential) => 417 files ~ 20 min on the first run; daily runs only upload the delta.
+- Finding for the tuning step: with the verbatim prompt the model cites with a Markdown link, not literal `Article URL:` lines (0 lines in the answer). Needs an experiment on document layout (e.g. repeat the `Article URL:` line per section) without touching the prompt.
+- Full 417 upload into store `helpbot-docs` started in the background (log in scratchpad `full_run1.log`).
+- README skeleton created (<= 1 page rule); daily job, screenshot and "what was cut" sections are TODO.
+
+### Step 2b-2 - flow completed except cloud deploy (2026-10-31)
+- Rule 0 added at the top of CLAUDE.md (core flow first, optimise last, note problems, simple guards for complex cases, record reasons).
+- Docs: `docs/conventions.md` (conventions + reasons), `docs/backlog.md` (skipped/optimise items with pros/cons, problems found).
+- Tests reorganised by rubric area: `tests/scrape_quality` (25), `tests/vector_upload` (20), `tests/daily_job` (15), `tests/repo_hygiene` (10); shared fakes in `tests/support.py`. 88 passed + 1 xfail (README TODO reminder). Corpus tests use the 40 samples only.
+- `ARTICLE_LIMIT=N` (replaces MAX_ARTICLES): newest N by `updated_at`, never deletes. `run_job()` in pipeline.py; `main.py` is now only wiring.
+- Full 417 upload: first run added=416 failed=1 (article 8899727608083 "QR Scan to Interact": a 125 KB inline base64 image made the upload fail with 400 "Upload has already been terminated"). Fix: drop `data:` images in the converter, linter + test; rerun: `added=1 skipped=416`, store=417 documents.
+- Docker image built (280 MB); container run against the full store: exit 0, `skipped=417`, 9 clean log lines, key not in the log; no key -> exit 2.
+- `scripts/demo_delta.py` on a throwaway store (real API, 5 scenarios, all OK): 30 newest -> same again (skipped 30) -> widened to 40 (added 10, skipped 30) -> new article (added 1, skipped 39) -> edited article (updated 1, skipped 39). Store deleted afterwards.
+- Chat check on the full store: correct 5-bullet answer for the YouTube question from the right article, 3 chunks, but 0 literal `Article URL:` lines (backlog B1).
+- Added `.github/workflows/daily-sync.yml` (once a day, Docker, secret key, log artifact + summary) and `tests.yml`; YAML validated, NOT yet run (needs the repo pushed to GitHub by the user, a secret and a first manual run).
+- Open: AI Studio cannot attach a File Search store (screenshot of the Tools panel) -> email the recruiter; deploy target decision; screenshot; README TODOs.
