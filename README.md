@@ -29,8 +29,11 @@ python scripts/check_store.py
 ```bash
 python scripts/chat.py "How do I add a YouTube video?"
 ```
-**Optional:** `pytest -q` runs the offline tests; Docker runs the same job once and exits 0:
-`docker build -t helpbot . && docker run --rm -e GEMINI_API_KEY=<your key> helpbot`
+**6. Run the job in Docker** (the same job the daily schedule runs: it runs once and exits 0)
+```bash
+docker build -t helpbot . && docker run --rm --env-file .env helpbot
+```
+Offline tests: `pytest -q`.
 
 Settings (store name, timeouts, chat model, how many articles) are in `config/settings.toml`. Exit codes: 0 ok, 1 some uploads failed,
 2 config/key problem, 3 API/network problem (each prints a specific message). The free tier allows ~20 chat requests per model per day.
