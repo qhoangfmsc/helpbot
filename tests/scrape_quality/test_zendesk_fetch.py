@@ -1,3 +1,5 @@
+"""Zendesk fetch: pagination, drafts skipped, retries on transient errors (fake HTTP, no network)."""
+
 from helpbot.zendesk import fetch_articles, retrying_session
 
 

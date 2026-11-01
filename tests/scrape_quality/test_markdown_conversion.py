@@ -1,3 +1,5 @@
+"""HTML -> Markdown: headings, links, lists, code and tables kept; editor noise and empty tags removed."""
+
 from helpbot.markdown import html_to_markdown, render_article, slugify
 from helpbot.zendesk import Article
 

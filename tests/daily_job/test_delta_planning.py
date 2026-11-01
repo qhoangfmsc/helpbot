@@ -1,3 +1,5 @@
+"""plan_delta: comparing content hashes decides added / updated / skipped / orphaned."""
+
 from helpbot.sync import RemoteDoc, content_hash, plan_delta
 
 

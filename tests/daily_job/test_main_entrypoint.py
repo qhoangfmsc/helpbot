@@ -1,3 +1,5 @@
+"""main.py: exit codes (0 ok, non-zero on failure) and the final summary log line."""
+
 import logging
 
 from tests.support import FakeStore, make_article, run_main

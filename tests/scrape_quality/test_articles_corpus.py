@@ -1,4 +1,4 @@
-"""The committed articles/ folder (the 40 synced articles) is what a reviewer reads first: keep it spec-compliant."""
+"""The committed articles/ folder is what a reviewer reads first: every file must be spec-compliant."""
 
 import importlib.util
 import re

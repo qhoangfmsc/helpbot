@@ -1,3 +1,5 @@
+"""Writing articles/: one file per article, idempotent, never deletes files it did not generate."""
+
 import pytest
 
 from helpbot.scrape import write_articles

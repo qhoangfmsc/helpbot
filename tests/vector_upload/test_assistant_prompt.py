@@ -1,3 +1,5 @@
+"""The system prompt file equals the task text, character for character."""
+
 from pathlib import Path
 
 # The take-home requires this exact text (note the bullet character U+2022 and straight quotes).

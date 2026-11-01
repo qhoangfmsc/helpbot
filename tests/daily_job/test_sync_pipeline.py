@@ -1,3 +1,5 @@
+"""The sync pipeline on a fake store: upload before delete, failures, and the mass-deletion guard."""
+
 from helpbot.pipeline import sync_store
 from helpbot.sync import RemoteDoc, content_hash
 from tests.support import FakeStore, make_local

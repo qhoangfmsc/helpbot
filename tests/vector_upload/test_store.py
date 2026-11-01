@@ -1,3 +1,5 @@
+"""The Gemini store wrapper on a fake client: retries, open or create, upload with metadata and chunking, delete."""
+
 from pathlib import Path
 from types import SimpleNamespace
 

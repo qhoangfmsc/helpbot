@@ -1,3 +1,5 @@
+"""Chunking settings (400 tokens, 50 overlap) and the local chunk estimate used in the log."""
+
 from helpbot.chunking import MAX_TOKENS_PER_CHUNK, OVERLAP_TOKENS, estimate_chunks
 
 

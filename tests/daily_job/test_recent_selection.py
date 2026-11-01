@@ -1,3 +1,5 @@
+"""latest(): the newest-articles window picks the most recently updated ones, reproducibly."""
+
 from helpbot.scrape import latest
 from tests.support import make_article
 
