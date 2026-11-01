@@ -1,7 +1,6 @@
 """Sync the Markdown articles into the Gemini store: the same job the daily workflow runs.
 
-Usage: python scripts/sync_docs.py            (needs GEMINI_API_KEY in .env; first run ~1-2 min, later runs only upload changes)
-       python scripts/sync_docs.py --allow-mass-delete   (one-off cleanup after deliberately shrinking config/article_ids.txt)
+Usage: python scripts/sync_docs.py            (needs GEMINI_API_KEY in .env; first run ~2-3 min, later runs only upload changes)
 Prints `added=… updated=… skipped=…` at the end. Check the result with scripts/check_store.py.
 """
 

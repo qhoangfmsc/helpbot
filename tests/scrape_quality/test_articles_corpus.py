@@ -48,8 +48,8 @@ def test_no_navigation_or_ad_boilerplate_survived():
         assert noise not in text
 
 
-def test_job_scope_file_lists_exactly_the_committed_articles_including_youtube():
+def test_every_listed_article_is_committed_including_youtube():
     from_file = (ROOT / "config" / "article_ids.txt").read_text(encoding="utf-8").splitlines()
     ids = [line for line in from_file if line and not line.startswith("#")]
-    assert sorted(ids) == sorted(p.name.split("-")[0] for p in ARTICLES)
+    assert set(ids) <= {p.name.split("-")[0] for p in ARTICLES}  # the folder may also hold the newest articles
     assert "360051014713" in ids  # "How to Use YouTube with ..." answers the sample question

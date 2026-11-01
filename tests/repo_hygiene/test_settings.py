@@ -40,6 +40,7 @@ def test_values_override_defaults_and_lists_become_tuples(tmp_path):
     ("uplaod_workers = 2", "unknown setting"),
     ("upload_workers = 'many'", "invalid value"),
     ("upload_workers = 0", "invalid value"),
+    ("newest_articles = -1", "invalid value"),
     ("job_max_minutes = true", "invalid value"),
     ("store_name = ''", "invalid value"),
     ("chat_fallback_models = 'x'", "invalid value"),
@@ -47,6 +48,10 @@ def test_values_override_defaults_and_lists_become_tuples(tmp_path):
 def test_mistakes_are_reported_with_the_setting_name(tmp_path, text, words):
     with pytest.raises(ValueError, match=words):
         load_settings(write(tmp_path, text))
+
+
+def test_zero_newest_articles_is_allowed_and_means_only_the_listed_ones(tmp_path):
+    assert load_settings(write(tmp_path, "newest_articles = 0")).newest_articles == 0
 
 
 def test_paths_are_relative_to_the_repo_root_unless_absolute():

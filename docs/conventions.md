@@ -49,7 +49,7 @@ has its own message that says what happened and what to do. *Why:* the daily job
 - **Exit codes:** 0 ok | 1 some uploads failed (the next run retries them) | 2 configuration/input problem | 3 API or network problem.
 - **Per-item problem -> keep going:** one failed upload is logged with its reason, counted in `failed=`, the others continue.
 - **Systemic problem -> fail loudly:** empty fetch, mass deletion (> 50% of the store) is refused and reported as a problem (exit 1). The refusal names the one-off override
-  `python scripts/sync_docs.py --allow-mass-delete`, to be run by a human after deliberately shrinking the list; it is never set in the workflow and never applies to partial (`--limit`) runs.
+  `python scripts/sync_docs.py --allow-mass-delete`, to be run by a human on purpose; it is never set in the workflow and never applies to partial (`--limit`) runs.
 - **Order of operations for updates:** upload the new version, then delete the old; a crash leaves a duplicate that the next run removes.
 
 ## 5. Configuration
@@ -75,15 +75,18 @@ File = `# Title`, blank, `Article URL: <html_url>`, blank, body. Name = `<id>-<s
 ## 7. Delta sync and state
 - State lives **in the store**: each document carries `article_id` and `content_hash` metadata; each run lists the store and compares.
   *Why:* cron containers have no persistent disk; this needs no database, file or secret besides the API key.
-- Hash = SHA-256 of the final Markdown. `--limit N` (newest N by `updated_at`) is a partial mode and **never deletes**.
+- Hash = SHA-256 of the final Markdown. `--limit N` (newest N of the selection by `updated_at`) is a partial mode and **never deletes**.
 - Known limit: changing chunk settings alone does not change the hash (see backlog B2).
 
 ## 7b. Scope of the job
-- The job syncs the articles listed in `config/article_ids.txt` (40 ids; the job writes them to the committed `articles/` folder, which a
-  test keeps in step with the list; includes the YouTube article). *Why:* it is the flow a reviewer will run and read; small, fast, within free-tier limits.
-- The job fetches the Help Center listing (a handful of paginated requests) and keeps only the listed ids; there is no "all articles" mode.
-- The list is the truth: documents of articles that left the list are deleted (still behind the 50% guard); an id that no longer
-  exists on the site is only a warning. `--limit N` (newest N) is a partial mode and never deletes.
+- The job syncs the **union** of two sources: the ids in `config/article_ids.txt` (pinned, always kept; includes the YouTube article that
+  answers the sample question and is not among the newest) and the `newest_articles` (default 40) most recently updated articles of the site.
+  An article in both counts once. *Why:* the spec asks the daily job to detect new/updated articles; a fixed list can never see a new one,
+  while "newest only" could drop the YouTube article. One job for local and cloud so what the reviewer runs is what the cron runs.
+- Measured on the live site: 40 pinned + 40 newest overlap on 6 articles = 74. `newest_articles = 0` goes back to the pinned list only.
+- Deletion: a document is deleted only when its article is **gone from the site** (`site_ids` from the same fetch), still behind the 50% guard.
+  Articles that merely fell out of the newest window stay, so the store grows slowly (backlog B25). `--limit N` is a partial mode and never deletes.
+- The job fetches the Help Center listing (a handful of paginated requests); there is no "all articles" mode.
 
 ## 8. Chunking
 400 tokens per chunk, 50 overlap (~12%). *Why:* articles average ~1.4k tokens and are step-by-step procedures; ~400 tokens keeps a few

@@ -41,7 +41,7 @@ def test_each_article_is_listed_with_id_status_title_and_link(tmp_path):
     text = check_store.format_articles(local, stored, check_store.build_report(local, stored))
     assert "1. 1" in text and "in sync" in text and "Add a YouTube video" in text and "https://help.example.com/hc/articles/1" in text
     assert "MISSING in store" in text and "Pair a screen" in text and "https://help.example.com/hc/articles/3" in text
-    assert "EXTRA in store" in text and "doc-9" in text  # a document without a file is named so it can be found
+    assert "older, in store" in text and "doc-9" in text  # a document without a file is named so it can be found
 
 
 def test_an_outdated_article_shows_both_hashes_for_debugging(tmp_path):
@@ -63,10 +63,10 @@ def test_statistics_count_files_size_and_chunks(tmp_path):
     stats = check_store.format_local_stats(check_store.load_local(files))
     assert "2 files in articles/" in stats and "chunks estimated" in stats and "400 tokens per chunk" in stats
     counts = check_store.format_counts({"in_sync": ["1"], "missing": ["2"], "outdated": [], "extra": ["9"], "duplicates": []})
-    assert "in sync 1" in counts and "missing in store 1" in counts and "extra in store 1" in counts
+    assert "in sync 1" in counts and "missing in store 1" in counts and "older in store 1" in counts
 
 
-def test_check_store_main_points_to_the_override_when_most_of_the_store_is_extra(monkeypatch, capsys, tmp_path):
+def test_older_documents_in_the_store_are_reported_but_are_not_a_difference(monkeypatch, capsys, tmp_path):
     from types import SimpleNamespace
 
     article_file(tmp_path, "1", "One", "one")  # check_store reads the id from the file name
@@ -87,6 +87,6 @@ def test_check_store_main_points_to_the_override_when_most_of_the_store_is_extra
     monkeypatch.setattr(check_store, "load_settings", lambda: Settings(articles_dir=str(tmp_path)))
     monkeypatch.setattr(check_store, "make_client", lambda key, timeout=None: client)
     monkeypatch.setattr(check_store.FileSearchStore, "open", staticmethod(lambda c, n: FakeStore()))
-    assert check_store.main() == 1
+    assert check_store.main() == 0
     out = capsys.readouterr().out
-    assert "extra in store 6" in out and "python scripts/sync_docs.py --allow-mass-delete" in out and "One" in out
+    assert "older in store 6" in out and "OK:" in out and "One" in out

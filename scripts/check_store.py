@@ -2,7 +2,7 @@
 
 Usage: python scripts/check_store.py [--brief]     (--brief prints only the statistics, not one entry per article)
 Prints store statistics, local statistics and, per article: id, status, title, link, size, estimated chunks, content hash.
-Exit code 0 when the store matches articles/, 1 when something is missing, outdated or extra (fix: python scripts/sync_docs.py),
+Exit code 0 when every file in articles/ is in the store and up to date, 1 when something is missing, outdated or duplicated (fix: python scripts/sync_docs.py),
 2 for a missing/invalid key or settings, 3 when Gemini is unreachable, timed out or the quota is used up (each prints its own message).
 """
 
@@ -26,7 +26,8 @@ STATUS = {"in_sync": "in sync", "missing": "MISSING in store", "outdated": "OUTD
 
 
 def build_report(local: dict[str, LocalDoc], remote: list[RemoteDoc]) -> dict[str, list[str]]:
-    """Article ids per status. `missing`/`outdated` need an upload, `extra` is in the store but not in articles/."""
+    """Article ids per status. `missing`/`outdated` need an upload; `extra` is in the store but has no file in articles/
+    (an older article that left the newest window: kept on purpose, so it is not a difference)."""
     delta = plan_delta({i: d.hash for i, d in local.items()}, remote)
     return {
         "in_sync": delta.skipped,
@@ -38,7 +39,7 @@ def build_report(local: dict[str, LocalDoc], remote: list[RemoteDoc]) -> dict[st
 
 
 def is_different(report: dict[str, list[str]]) -> bool:
-    return any(report[k] for k in ("missing", "outdated", "extra", "duplicates"))
+    return any(report[k] for k in ("missing", "outdated", "duplicates"))
 
 
 def article_info(path: Path) -> tuple[str, str]:
@@ -62,7 +63,7 @@ def format_local_stats(local: dict[str, LocalDoc]) -> str:
 def format_counts(report: dict[str, list[str]]) -> str:
     return (
         f"compare: in sync {len(report['in_sync'])} | missing in store {len(report['missing'])} | outdated in store {len(report['outdated'])} "
-        f"| extra in store {len(report['extra'])} | duplicates {len(report['duplicates'])}"
+        f"| older in store {len(report['extra'])} | duplicates {len(report['duplicates'])}"
     )
 
 
@@ -83,7 +84,7 @@ def format_articles(local: dict[str, LocalDoc], remote: list[RemoteDoc], report:
         lines.append(f"     {url}")
     for article_id in report["extra"]:
         names = ", ".join(d.name.rsplit("/", 1)[-1] for d in remote if d.article_id == article_id)
-        lines.append(f"  +  {article_id:<15} {'EXTRA in store':<18} no file in articles/ (store document: {names})")
+        lines.append(f"  +  {article_id:<15} {'older, in store':<18} no file in articles/ (kept; store document: {names})")
     for article_id in report["duplicates"]:
         lines.append(f"  !  {article_id:<15} {'DUPLICATE in store':<18} more than one document for this article")
     return "\n".join(lines)
@@ -125,12 +126,9 @@ def main() -> int:
     if "--brief" not in sys.argv:
         print("\n" + format_articles(local, remote, report) + "\n")
     if not is_different(report):
-        print("OK: the store matches articles/.")
+        print("OK: every file in articles/ is in the store and up to date.")
         return 0
-    print("DIFFERENT: run `python scripts/sync_docs.py` to upload missing/outdated documents and remove extras.")
-    if len(report["extra"]) > len(local):
-        print("Note: more than half of the store is extra, so sync_docs refuses to delete it by default; "
-              "if that is intended run once: python scripts/sync_docs.py --allow-mass-delete")
+    print("DIFFERENT: run `python scripts/sync_docs.py` to upload the missing/outdated documents and remove duplicates.")
     return 1
 
 

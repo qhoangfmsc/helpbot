@@ -2,7 +2,8 @@
 # Paths are relative to the repo root. Delete a line to use its default.
 
 help_center_url = "https://support.optisigns.com"   # Zendesk Help Center to read the articles from
-article_ids_file = "config/article_ids.txt"          # the articles to keep in sync (one id per line)
+article_ids_file = "config/article_ids.txt"          # articles that are always synced (one id per line), e.g. the YouTube one
+newest_articles = 40                                 # plus the N most recently updated articles of the site, so new ones are picked up (0 = only the listed ones)
 articles_dir = "articles"                            # where the Markdown files are written
 store_name = "helpbot-docs"                          # Gemini File Search store (created on the first run)
 

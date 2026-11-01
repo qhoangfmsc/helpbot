@@ -71,15 +71,19 @@ def run_job(
     limit: int | None = None,
     max_seconds: float | None = None,
     allow_mass_delete: bool = False,
+    site_ids: set[str] | None = None,
 ) -> Summary:
     """One daily run on already-fetched articles: write Markdown, compare with the store, upload only the delta.
 
     `limit` keeps only the N most recently updated articles (partial run: nothing is ever deleted then).
+    `site_ids` = every article id on the site: only documents of articles that left the site are deleted; documents of
+    articles that merely fell out of this run's selection (older than the newest N) are kept.
     """
     selected = latest(articles, limit) if limit else articles
     files = write_articles(selected, out_dir)
     return sync_store(
-        load_local(files), store, workers=workers, allow_delete=limit is None, max_seconds=max_seconds, allow_mass_delete=allow_mass_delete
+        load_local(files), store, workers=workers, allow_delete=limit is None, max_seconds=max_seconds, allow_mass_delete=allow_mass_delete,
+        site_ids=site_ids,
     )
 
 
@@ -90,8 +94,11 @@ def sync_store(
     allow_delete: bool = True,
     max_seconds: float | None = None,
     allow_mass_delete: bool = False,
+    site_ids: set[str] | None = None,
 ) -> Summary:
-    """`max_seconds` is a time limit for the whole run: no new upload starts after it, the next run continues."""
+    """`max_seconds` is a time limit for the whole run: no new upload starts after it, the next run continues.
+
+    `site_ids` (when given) protects documents of articles that are still on the site but not in `local`."""
     summary = Summary()
     stop = threading.Event()  # set when every further upload would fail the same way (daily quota, bad key) or time is up
     reasons: list[str] = []
@@ -99,6 +106,8 @@ def sync_store(
     remote = store.list_documents()
     delta = plan_delta({i: d.hash for i, d in local.items()}, remote)
     summary.skipped = len(delta.skipped)
+    if site_ids is not None:
+        delta.orphans = [d for d in delta.orphans if d.article_id not in site_ids]
     log.info(
         "plan add=%s update=%s skip=%s orphans=%s duplicates=%s (store has %s documents)",
         len(delta.added), len(delta.updated), len(delta.skipped), len(delta.orphans), len(delta.duplicates), len(remote),

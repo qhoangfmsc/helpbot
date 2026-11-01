@@ -36,6 +36,16 @@ def latest(articles: list[Article], limit: int) -> list[Article]:
     return sorted(articles, key=lambda a: (a.updated_at, int(a.id)), reverse=True)[:limit]
 
 
+def choose(articles: list[Article], ids: list[str], newest: int) -> tuple[list[Article], list[str]]:
+    """The listed (pinned) articles plus the `newest` most recently updated ones, each once, in the site's order.
+
+    Also returns the listed ids that were not found on the site.
+    """
+    pinned, missing = select_ids(articles, ids)
+    keep = {a.id for a in pinned} | {a.id for a in latest(articles, newest)}
+    return [a for a in articles if a.id in keep], missing
+
+
 def write_articles(articles: list[Article], out_dir: Path) -> dict[str, Path]:
     """Mirror `articles` into `out_dir` as `<slug>.md`; returns article id -> file path.
 

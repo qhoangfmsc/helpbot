@@ -6,12 +6,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SETTINGS_FILE = ROOT / "config" / "settings.toml"
+ZERO_ALLOWED = {"newest_articles"}  # 0 = "no newest articles, only the listed ones"
 
 
 @dataclass(frozen=True)
 class Settings:
     help_center_url: str = "https://support.optisigns.com"
     article_ids_file: str = "config/article_ids.txt"
+    newest_articles: int = 40
     articles_dir: str = "articles"
     store_name: str = "helpbot-docs"
     upload_workers: int = 4
@@ -41,7 +43,7 @@ def load_settings(path: Path = SETTINGS_FILE) -> Settings:
             ok = isinstance(value, list) and all(isinstance(v, str) for v in value)
             data[name] = tuple(value) if ok else value
         elif expected in (int, "int"):
-            ok = isinstance(value, int) and not isinstance(value, bool) and value > 0
+            ok = isinstance(value, int) and not isinstance(value, bool) and value >= (0 if name in ZERO_ALLOWED else 1)
         elif expected in (float, "float"):
             ok = isinstance(value, (int, float)) and not isinstance(value, bool) and value > 0
         else:

@@ -65,6 +65,7 @@ def run_main(monkeypatch, tmp_path, store, articles, argv=(), ids_file=None, **s
 
     monkeypatch.setattr(main, "load_dotenv", lambda path: None)
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    settings.setdefault("newest_articles", 0)  # tests opt in to the "newest N" part
     if ids_file is None:
         ids = tmp_path / "default_ids.txt"
         ids.write_text("\n".join(a.id for a in articles) + "\n", encoding="utf-8")

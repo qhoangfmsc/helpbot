@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 
 from helpbot.pipeline import run_job
 from helpbot.problems import EXIT_API, EXIT_CONFIG, EXIT_SOME_FAILED, classify, explain
-from helpbot.scrape import load_ids, select_ids
+from helpbot.scrape import choose, load_ids
 from helpbot.settings import ROOT, Settings, load_settings
 from helpbot.store import FileSearchStore, make_client
 from helpbot.zendesk import fetch_articles
@@ -26,7 +26,7 @@ log = logging.getLogger("helpbot")
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(prog="sync", description="Sync the Help Center articles into the Gemini store (only changes are uploaded).")
     parser.add_argument("--allow-mass-delete", action="store_true",
-                        help="one-off cleanup: allow deleting more than half of the store (after deliberately shrinking the article list)")
+                        help="one-off: allow deleting more than half of the store (the guard refuses it by default)")
     parser.add_argument("--limit", type=int, metavar="N", help="partial run: only the N most recently updated articles; never deletes")
     return parser.parse_args(argv)
 
@@ -60,11 +60,12 @@ def _run(api_key: str, settings: Settings, args: argparse.Namespace):
     all_articles = list(fetch_articles(settings.help_center_url))
     ids_file = settings.path(settings.article_ids_file)
     try:
-        articles, missing = select_ids(all_articles, load_ids(ids_file))
+        articles, missing = choose(all_articles, load_ids(ids_file), settings.newest_articles)
     except (OSError, ValueError) as error:
         log.error("cannot use article_ids_file=%s: %s", settings.article_ids_file, error)
         return None
-    log.info("syncing %s of the %s articles on the site: only those listed in %s", len(articles), len(all_articles), settings.article_ids_file)
+    log.info("syncing %s of the %s articles on the site: those listed in %s plus the %s most recently updated",
+             len(articles), len(all_articles), settings.article_ids_file, settings.newest_articles)
     if missing:
         log.warning("%s listed article ids are not on the site any more: %s", len(missing), ", ".join(missing))
     store = FileSearchStore.open(make_client(api_key, settings.request_timeout_seconds), settings.store_name)
@@ -76,6 +77,7 @@ def _run(api_key: str, settings: Settings, args: argparse.Namespace):
         limit=args.limit,
         max_seconds=settings.job_max_minutes * 60,
         allow_mass_delete=args.allow_mass_delete,
+        site_ids={a.id for a in all_articles},
     )
 
 
