@@ -1,10 +1,8 @@
 # helpbot
-
 Support-bot knowledge pipeline: scrape Help Center articles, convert them to clean Markdown, load them into a Gemini File Search
 store through the API, keep the store in sync with a daily job (only changes are uploaded), and chat with the result.
 
 ## Run locally: step by step
-
 You need Python 3.11+, Git, and a free Gemini API key from https://aistudio.google.com/apikey (the key is the only secret).
 
 **1. INSTALLATION**
@@ -39,7 +37,6 @@ Settings (store name, timeouts, chat model, how many articles) are in `config/se
 2 config/key problem, 3 API/network problem (each prints a specific message). The free tier allows ~20 chat requests per model per day.
 
 ## How it works
-
 1. **Scrape** (`helpbot/zendesk.py`): public Help Center API. Which articles: the ids in `config/article_ids.txt` (always kept, e.g. the
    YouTube one) **plus the 40 most recently updated** (`newest_articles`), so new articles are picked up. Overlaps count once.
 2. **Markdown** (`helpbot/markdown.py`): headings, lists, code blocks, tables, images and links are kept, editor noise removed.
@@ -52,7 +49,6 @@ Settings (store name, timeouts, chat model, how many articles) are in `config/se
    `chunks_estimated` in the log is a local estimate.
 
 ## Evidence
-
 - **Daily job logs**: `.github/workflows/daily-sync.yml` builds the Docker image and runs the job once a day (21:00 UTC = 04:00 Vietnam time, outside business hours; the key is a repository secret).
   Both triggers work: **#4 ran by the schedule** (Success, 30 s; GitHub started it late, 06:51 Vietnam time, as it may under load) and
   **#3 by hand** ("Run workflow"). ![Actions: run #4 Scheduled and run #3 Manually run, both green](docs/img/daily-runs.png)
@@ -68,6 +64,5 @@ Settings (store name, timeouts, chat model, how many articles) are in `config/se
 - **Scrape fidelity**: `python scripts/verify_articles.py` re-fetches the committed articles and compares them with the live site.
 
 ## Limits and what was cut
-
 AI Studio's chat has no File Search tool, so the assistant is configured by API (`scripts/chat.py`). No chat UI, no Postgres/Redis
 (state lives in the store). Reasons and pros/cons of every skipped item: `docs/backlog.md`; code conventions: `docs/conventions.md`.
