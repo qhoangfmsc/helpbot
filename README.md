@@ -56,6 +56,7 @@ Settings (store name, timeouts, chat model, how many articles) are in `config/se
   Details of the manual run: [run #3, Success, 28 s, commit a80c530](https://github.com/qhoangfmsc/helpbot/actions/runs/41233639313) (GitHub asks for a
   sign-in to open the raw log; the status and the `run-log` artifact are listed on the public run page). Its last log line (from before the newest-articles change, so 40 articles):
   `2026-10-31 19:19:30,826 INFO done added=0 updated=0 skipped=40 deleted=0 failed=0 files=0 chunks_estimated=0 store_documents=40`
+- **Files and chunks embedded** (first load of the 74 articles, by the user): `INFO done added=34 updated=0 skipped=40 deleted=0 failed=0 files=34 chunks_estimated=164 store_documents=74` ([terminal screenshot](docs/img/first-sync.png))
 - **Assistant answer (screenshot)** to "How do I add a YouTube video?" (`python scripts/chat.py`): 5 steps, one `Article URL:` line, 3 retrieved chunks from the right
   article. The first attempt got an HTTP 503 from Gemini and the script retried by itself. The prompt is `prompts/system_prompt.txt` (verbatim).
 

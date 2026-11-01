@@ -108,8 +108,21 @@ root and `.env` from its own location, so it works from any directory. Dev tools
 - Offline, fast, no real keys. Layout follows the rubric: `tests/scrape_quality`, `tests/vector_upload`, `tests/daily_job`, `tests/repo_hygiene`.
 - Shared fakes live in `tests/support.py` (`FakeStore`, `run_main`). Real-API checks are scripts, not tests: `scripts/demo_delta.py`,
   `scripts/verify_articles.py`, `scripts/chat.py`. *Why:* Gemini has rate limits and a key is required; pytest must be runnable by a reviewer.
-- Corpus tests use the **40 committed articles** only (Gemini has rate limits).
+- Corpus tests use the committed `articles/` folder (the pinned articles plus the newest ones the job fetched, 74 at the time of writing); no network.
 - Every real bug found gets a test (whitespace glue, `<ol start>`, base64 image, empty fetch, unsafe delete).
 
 ## 10. Git
 Conventional Commits (`type(scope): subject`), one commit per finished step, the user is the only author, never `git add -A`, never push from tooling.
+
+## 11. Key choices: pros and cons (for the interview)
+| Choice | Pros | Cons / what it costs |
+|---|---|---|
+| Gemini File Search instead of OpenAI vector store | free tier, chunking/embedding done server-side, one SDK | 20 generate requests per model per day; no chunk counts; AI Studio chat has no File Search tool (assistant is driven by API) |
+| Public Zendesk API + BeautifulSoup/markdownify with data-driven cleanups | stable fields (`updated_at`, `body`), no browser, 5 requests per scrape; every cleanup came from a real defect and has a test | custom code to maintain; some source quirks kept on purpose (glued words, absolute links) |
+| Stateless delta: SHA-256 in document metadata | no DB, no state file, works on an ephemeral cron container | one list call per run; chunk settings are not part of the hash (backlog B2) |
+| Pinned ids + newest N in one job | catches new articles and keeps the YouTube article; same code local and in the cron | store grows slowly (B25); 74 articles instead of a tidy 40 |
+| Delete only articles gone from the site, behind a 50% guard | a broken fetch cannot wipe the store | a stale article that is still on the site is never removed |
+| GitHub Actions as the scheduler (Docker image built in the run) | free, logs and artifact link, secret store, manual button | not a classic hosting platform; schedule may start late (observed ~3 h); raw logs need sign-in |
+| Verbatim system prompt, no answer guardrails | exactly what the spec asks; honest evaluation | the bot is not perfect (sometimes no literal `Article URL:` line, depends on the model) |
+| One secret in `.env`, everything else in `config/settings.toml` | a key cannot be committed by mistake (hygiene tests); settings validated | two places to look |
+| Offline tests with fakes, grouped by rubric area | fast, runnable by a reviewer without a key | real-API behaviour is checked by scripts, not tests |
